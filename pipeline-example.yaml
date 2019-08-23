@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: JindraPipeline
+metadata:
+  name: jindra
+spec:
+  resources:
+    triggers: git
+    containers:
+      - name: git
+        image: jindra/git-resource
+        env:
+          - name: repo
+            value: git@github.com/kesselborn/jindra
+          - name: privateKey
+            valueFrom: { secretKeyRef: {name: githubSecret, key: privateKey}}
+      - name: docker-image
+        image: jindra/docker-image-resource
+        env:
+          - name: repo
+            value: kesselborn/jindra
+          - name: username
+            valueFrom: { secretKeyRef: {name: dockerSecret, key: username} }
+          - name: password
+            valueFrom: { secretKeyRef: {name: dockerSecret, key: password} }
+
+  stages:
+    - metadata:
+        name: build-binary
+        annotations:
+          jindra.io/inputs: git
+          jindra.io/outputs: docker-image
+      spec:
+        containers:
+          - name: build-go-binary
+            image: golang
+            workDir: ${RESOURCES_DIR}/git
+            command: |
+              set -e # fail if any of the command fails
+              go build -o jindra .
+              cp jindra Dockerfile ${RESOURCES_DIR}/docker-image
+    - metadata:
+        name: integration-test
+        annotations:
+          jindra.io/inputs: git
+      spec:
+        containers:
+          - name: jindra
+            image: kesselborn/jindra:${BUILD_NO}
+          - name: integration-tests
+            image: alpine
+            workDir: ${RESOURCES_DIR}/git
+            args: |
+              ./tests.sh localhost:8080
+    - metadata:
+        name: deploy
+        annotations:
+          jindra.io/inputs: git
+      spec:
+        containers:
+          - name: helm
+            image: jindra/helm
+            workDir: ${RESOURCES_DIR}/git
+            args: |
+              helm template --set image.tag=${BUILD_NO}|kubectl apply -f -
+
+
