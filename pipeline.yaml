@@ -16,3 +16,7 @@ spec:
           jindra.io/outputs: <[]Tokens> # Tokens == resources
         #...
       spec: <Object> # pod.spec
+  on_failure:
+    <pod>
+  on_success:
+    <pod>

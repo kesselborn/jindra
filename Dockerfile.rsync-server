@@ -1,0 +1,5 @@
+FROM panubo/sshd
+RUN apk add --no-cache rsync
+COPY meta-entry.sh /meta-entry.sh
+ENTRYPOINT ["/meta-entry.sh"]
+CMD /usr/sbin/sshd -D -e -f /etc/ssh/sshd_config

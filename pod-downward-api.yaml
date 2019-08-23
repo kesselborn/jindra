@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: foo
+  annotations:
+  labels:
+    app: echo
+spec:
+  serviceAccountName: default
+  terminationGracePeriodSeconds: 5
+  #tolerations: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.15/#toleration-v1-core
+  #volumes: [...] # https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.15/#volume-v1-core
+  #initContainers:
+  #- name: hello
+  #  image: alpine
+  #  command: ['sh', '-c', 'echo Hello Kubernetes!']
+  hostname: foo
+  containers:
+  - name: bar
+    image: kesselborn/echo:alpine
+    env:
+      - { name: MY_IP, valueFrom: { fieldRef: { fieldPath: status.podIP } } }
+      - { name: MY_NAME, valueFrom: { fieldRef: { fieldPath: metadata.name } } }
+      - { name: MY_NAMESPACE, valueFrom: { fieldRef: { fieldPath: metadata.namespace } } }
+      - { name: MY_UID, valueFrom: { fieldRef: { fieldPath: metadata.uid } } }
+  - name: foo
+    image: alpine
+    command: ['sh', '-c', 'echo Hello Kubernetes! && sleep 3600']
+    env:
+      - { name: MY_IP, valueFrom: { fieldRef: { fieldPath: status.podIP } } }
+      - { name: MY_NAME, valueFrom: { fieldRef: { fieldPath: metadata.name } } }
+      - { name: MY_NAMESPACE, valueFrom: { fieldRef: { fieldPath: metadata.namespace } } }
+      - { name: MY_UID, valueFrom: { fieldRef: { fieldPath: metadata.uid } } }
+
+    #lifecycle: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.15/#lifecycle-v1-core (postStart / preStart)
+    #livenessProbe: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.15/#probe-v1-core
+    #readinessProbe
+    #ports: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.15/#containerport-v1-core
+    #securityContext: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.15/#securitycontext-v1-core
+    #stdin: false
+    #terminationMessagePath: /dev/termination-log
+    #volumeMounts: [...] # https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.15/#volumemount-v1-core
+    #workingDir: 

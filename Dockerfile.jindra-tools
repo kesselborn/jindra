@@ -1,0 +1,8 @@
+FROM golang:1.13 as builder
+WORKDIR /src
+ENV CGO_ENABLED=0
+COPY env-to-json /src
+RUN go get -v && go test . && go build -x ./... && go build ./cmd/env-to-json
+
+FROM alpine
+COPY --from=builder /src/env-to-json /jindra/contrib/env-to-json

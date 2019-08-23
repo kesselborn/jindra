@@ -1,66 +1,97 @@
 apiVersion: v1
 kind: JindraPipeline
 metadata:
-  name: jindra
+  name: http-fs
+  annotations:
+    jindra.io/build-no-offset: 42
 spec:
+  # https://github.com/concourse/concourse/wiki/Resource-Types
   resources:
-    triggers: git
+    triggers:
+      - name: git
+        schedule: "* * * * *"
+
     containers:
       - name: git
-        image: jindra/git-resource
+        image: concourse/git-resource
         env:
-          - name: repo
-            value: git@github.com/kesselborn/jindra
-          - name: privateKey
-            valueFrom: { secretKeyRef: {name: githubSecret, key: privateKey}}
-      - name: docker-image
-        image: jindra/docker-image-resource
+          - { name: "git.source.uri",                 value: "git@github.com/kesselborn/jindra" }
+          - { name: "git.source.private_key",         valueFrom: { secretKeyRef: {name: deploy-key, key: key}} }
+
+      - name: registry-image
+        image: concourse/registry-image-resource
         env:
-          - name: repo
-            value: kesselborn/jindra
-          - name: username
-            valueFrom: { secretKeyRef: {name: dockerSecret, key: username} }
-          - name: password
-            valueFrom: { secretKeyRef: {name: dockerSecret, key: password} }
+          - {name: "registry-image.params.image",      value: "./image.tar" }
+          - {name: "registry-image.source.debug",      value: "true" }
+          - {name: "registry-image.source.password",   valueFrom: { secretKeyRef: { name: "dockerhub", key: "password" } } }
+          - {name: "registry-image.source.repository", value: "kesselborntests/jindratest" }
+          - {name: "registry-image.source.tag",        value: "42" }
+          - {name: "registry-image.source.username",   valueFrom: { secretKeyRef: { name: "dockerhub", key: "username" } } }
+
+      - name: slack
+        image: cfcommunity/slack-notification-resource
+        env:
+          - { name: "slack.source.url",      valueFrom: { secretKeyRef: { name: "slack", key: "webhook_url" } } }
+          - { name: "slack.params.channel",  value: "deploy" }
+          - { name: "slack.params.username", value: "Alfons" }
 
   stages:
     - metadata:
-        name: build-binary
+        name: build-go-binary
         annotations:
           jindra.io/inputs: git
-          jindra.io/outputs: docker-image
+          jindra.io/outputs: transit
       spec:
         containers:
           - name: build-go-binary
             image: golang
-            workDir: ${RESOURCES_DIR}/git
-            command: |
-              set -e # fail if any of the command fails
-              go build -o jindra .
-              cp jindra Dockerfile ${RESOURCES_DIR}/docker-image
+            workingDir: ${JINDRA_RESOURCES_DIR}/git
+            command:
+              - sh
+              - -exc
+              - |
+                go build -x -o ${JINDRA_TRANSIT_DIR}/http-fs-linux .
+                cp Dockerfile.hello-world ${JINDRA_TRANSIT_DIR}/Dockerfile
     - metadata:
-        name: integration-test
+        name: build-docker-image
         annotations:
-          jindra.io/inputs: git
+          jindra.io/inputs: transit
+          jindra.io/outputs: registry-image
+          jindra.io/outputs-envs: |
+            registry-image.params.image=./image.tar
       spec:
         containers:
-          - name: jindra
-            image: kesselborn/jindra:${BUILD_NO}
-          - name: integration-tests
-            image: alpine
-            workDir: ${RESOURCES_DIR}/git
-            args: |
-              ./tests.sh localhost:8080
+          - name: build-docker-image
+            image: gcr.io/kaniko-project/executor:debug
+            args:
+              # where is your Dockerfile and the context
+              - --context
+              - /jindra/transit
+
+              # where to write the image (must match the registry-image.params.image setting from the resource)
+              - --tarPath
+              - ${JINDRA_RESOURCES_DIR}/registry-image/image.tar
+
+              # don't change
+              - --no-push
+              - --destination
+              - image
+
+  onSuccess:
     - metadata:
-        name: deploy
         annotations:
-          jindra.io/inputs: git
-      spec:
-        containers:
-          - name: helm
-            image: jindra/helm
-            workDir: ${RESOURCES_DIR}/git
-            args: |
-              helm template --set image.tag=${BUILD_NO}|kubectl apply -f -
+          jindra.io/outputs: slack
+          # attachements: https://api.slack.com/tools/block-kit-builder (newer) or https://api.slack.com/docs/messages/builder
+          jindra.io/outputs-envs: |
+            slack.params.text=Job succeeded
+            slack.params.icon_emoji=":ghost:"
+            slack.params.attachments='[{"color":"#00ff00","text":"hihihi"}]'
 
-
+  onFailure:
+    - metadata:
+        annotations:
+          jindra.io/outputs: slack
+          jindra.io/outputs-envs: |
+            slack.params.text=Job failed
+            slack.params.icon_emoji=":angry:"
+            slack.params.attachements='[{"color":"#ff0000","pretext":"hihihi"}]'
