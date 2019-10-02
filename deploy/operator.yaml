@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jindra
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: jindra
+  template:
+    metadata:
+      labels:
+        name: jindra
+    spec:
+      serviceAccountName: jindra
+      containers:
+        - name: jindra
+          # Replace this with the built image name
+          image: REPLACE_IMAGE
+          command:
+          - jindra
+          imagePullPolicy: Always
+          env:
+            - name: WATCH_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: OPERATOR_NAME
+              value: "jindra"

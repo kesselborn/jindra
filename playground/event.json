@@ -1,0 +1,33 @@
+  {
+    "kind": "Event",
+    "apiVersion": "v1",
+    "count": 1,
+    "involvedObject": {
+      "apiVersion": "v1",
+      "fieldPath": "spec.containers{test-container}",
+      "kind": "Pod",
+      "name": "dapi-envars-fieldref",
+      "namespace": "jindra",
+      "resourceVersion": "168024535",
+      "uid": "0ca55750-dc9f-11e9-b986-020146c217a6"
+    },
+    "lastTimestamp": "2019-09-21T18:39:27Z",
+    "message": "Killing container with id docker://test-container:Need to kill Pod",
+    "metadata": {
+      "creationTimestamp": "2019-09-21T18:39:27Z",
+      "name": "dapi-envars-fieldref.15c6881a88a197b9",
+      "namespace": "jindra",
+      "resourceVersion": "1710840",
+      "selfLink": "/api/v1/namespaces/jindra/events/dapi-envars-fieldref.15c6881a88a197b9",
+      "uid": "243b547a-dc9f-11e9-b986-020146c217a6"
+    },
+    "reason": "Killing",
+    "reportingComponent": "",
+    "reportingInstance": "",
+    "source": {
+      "component": "kubelet",
+      "host": "ip-172-23-123-97.eu-central-1.compute.internal"
+    },
+    "type": "Normal"
+  }
+
