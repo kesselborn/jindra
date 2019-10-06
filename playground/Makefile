@@ -1,5 +1,7 @@
 update-stages:
 	-kubectl -n jindra delete configmap jindra.http-fs-42.stages
+	-kubectl -n jindra delete secret jindra.http-fs-42.rsync-keys
+	kubectl -n jindra create secret generic jindra.http-fs-42.rsync-keys --from-file="priv=rsync" --from-file="pub=rsync.pub"
 	kubectl -n jindra create configmap jindra.http-fs-42.stages --from-file=jindra.http-fs-42.01-build-binary.yaml=jindra.http-fs-42.01-build-binary.yaml --from-file=jindra.http-fs-42.02-build-docker-image.yaml=jindra.http-fs-42.02-build-docker-image.yaml --from-file=jindra.http-fs-42.on-failure.yaml=jindra.http-fs-42.on-failure.yaml --from-file=jindra.http-fs-42.on-success.yaml=jindra.http-fs-42.on-success.yaml
 
 deploy: update-stages

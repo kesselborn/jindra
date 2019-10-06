@@ -13,13 +13,26 @@ metadata:
   name: jindra-runner
 rules:
 - apiGroups:
+  - "batch"
+  resources:
+  - jobs
+  verbs:
+  - get
+  - patch
+  - list
+- apiGroups:
   - ""
   resources:
   - pods
   - pods/status
   - pods/log
+  - secrets
+  - configmaps
+  - jobs
   verbs:
   - get
+  - update
+  - patch
   - list
   - watch
   - create

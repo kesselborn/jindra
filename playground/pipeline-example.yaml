@@ -3,7 +3,7 @@ kind: JindraPipeline
 metadata:
   name: http-fs
   annotations:
-    jindra.io/build-no-offset: 42
+    jindra.io/build-no-offset: "42"
 spec:
   # https://github.com/concourse/concourse/wiki/Resource-Types
   resources:
