@@ -11,9 +11,11 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"./pkg/apis/jindra/v1alpha1.JindraPipeline":       schema_pkg_apis_jindra_v1alpha1_JindraPipeline(ref),
-		"./pkg/apis/jindra/v1alpha1.JindraPipelineSpec":   schema_pkg_apis_jindra_v1alpha1_JindraPipelineSpec(ref),
-		"./pkg/apis/jindra/v1alpha1.JindraPipelineStatus": schema_pkg_apis_jindra_v1alpha1_JindraPipelineStatus(ref),
+		"./pkg/apis/jindra/v1alpha1.JindraPipeline":                 schema_pkg_apis_jindra_v1alpha1_JindraPipeline(ref),
+		"./pkg/apis/jindra/v1alpha1.JindraPipelineResources":        schema_pkg_apis_jindra_v1alpha1_JindraPipelineResources(ref),
+		"./pkg/apis/jindra/v1alpha1.JindraPipelineResourcesTrigger": schema_pkg_apis_jindra_v1alpha1_JindraPipelineResourcesTrigger(ref),
+		"./pkg/apis/jindra/v1alpha1.JindraPipelineSpec":             schema_pkg_apis_jindra_v1alpha1_JindraPipelineSpec(ref),
+		"./pkg/apis/jindra/v1alpha1.JindraPipelineStatus":           schema_pkg_apis_jindra_v1alpha1_JindraPipelineStatus(ref),
 	}
 }
 
@@ -60,15 +62,110 @@ func schema_pkg_apis_jindra_v1alpha1_JindraPipeline(ref common.ReferenceCallback
 	}
 }
 
+func schema_pkg_apis_jindra_v1alpha1_JindraPipelineResources(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "JindraPipelineResources defines a pipeline resources for new versions should be done",
+				Properties: map[string]spec.Schema{
+					"triggers": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("./pkg/apis/jindra/v1alpha1.JindraPipelineResourcesTrigger"),
+									},
+								},
+							},
+						},
+					},
+					"containers": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("k8s.io/api/core/v1.Container"),
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"triggers", "containers"},
+			},
+		},
+		Dependencies: []string{
+			"./pkg/apis/jindra/v1alpha1.JindraPipelineResourcesTrigger", "k8s.io/api/core/v1.Container"},
+	}
+}
+
+func schema_pkg_apis_jindra_v1alpha1_JindraPipelineResourcesTrigger(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "JindraPipelineResourcesTrigger defines a pipeline trigger and the cron schedule when the checks for new versions should be done",
+				Properties: map[string]spec.Schema{
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"schedule": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+				Required: []string{"name", "schedule"},
+			},
+		},
+		Dependencies: []string{},
+	}
+}
+
 func schema_pkg_apis_jindra_v1alpha1_JindraPipelineSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "JindraPipelineSpec defines the desired state of JindraPipeline",
-				Properties:  map[string]spec.Schema{},
+				Properties: map[string]spec.Schema{
+					"resources": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("./pkg/apis/jindra/v1alpha1.JindraPipelineResources"),
+						},
+					},
+					"stages": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("k8s.io/api/core/v1.Pod"),
+									},
+								},
+							},
+						},
+					},
+					"onSuccess": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("k8s.io/api/core/v1.Pod"),
+						},
+					},
+					"onError": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("k8s.io/api/core/v1.Pod"),
+						},
+					},
+				},
+				Required: []string{"resources", "stages", "onSuccess", "onError"},
 			},
 		},
-		Dependencies: []string{},
+		Dependencies: []string{
+			"./pkg/apis/jindra/v1alpha1.JindraPipelineResources", "k8s.io/api/core/v1.Pod"},
 	}
 }
 
@@ -77,7 +174,15 @@ func schema_pkg_apis_jindra_v1alpha1_JindraPipelineStatus(ref common.ReferenceCa
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "JindraPipelineStatus defines the observed state of JindraPipeline",
-				Properties:  map[string]spec.Schema{},
+				Properties: map[string]spec.Schema{
+					"buildNo": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"integer"},
+							Format: "int32",
+						},
+					},
+				},
+				Required: []string{"buildNo"},
 			},
 		},
 		Dependencies: []string{},

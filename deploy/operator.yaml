@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: jindra
+  name: jindra-operator
 spec:
   replicas: 1
   selector:
@@ -11,12 +11,13 @@ spec:
     metadata:
       labels:
         name: jindra
+        jindra-component: operator
     spec:
       serviceAccountName: jindra
       containers:
         - name: jindra
           # Replace this with the built image name
-          image: REPLACE_IMAGE
+          image: jindra/jindra
           command:
           - jindra
           imagePullPolicy: Always

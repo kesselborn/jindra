@@ -12,7 +12,9 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/kesselborn/jindra/pkg/apis"
+	jindrav1alpha1 "github.com/kesselborn/jindra/pkg/apis/jindra/v1alpha1"
 	"github.com/kesselborn/jindra/pkg/controller"
+	"github.com/kesselborn/jindra/pkg/controller/jindrapipeline"
 
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	kubemetrics "github.com/operator-framework/operator-sdk/pkg/kube-metrics"
@@ -22,12 +24,15 @@ import (
 	"github.com/operator-framework/operator-sdk/pkg/restmapper"
 	sdkVersion "github.com/operator-framework/operator-sdk/version"
 	"github.com/spf13/pflag"
+	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/signals"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission/builder"
 )
 
 // Change below variables to serve metrics on different host or port.
@@ -139,6 +144,49 @@ func main() {
 		if err == metrics.ErrServiceMonitorNotPresent {
 			log.Info("Install prometheus-operator in your cluster to create ServiceMonitor objects", "error", err.Error())
 		}
+	}
+
+	validatingWebhook, err := builder.NewWebhookBuilder().
+		Name("validating.k8s.io").
+		Validating().
+		Operations(admissionregistrationv1beta1.Create, admissionregistrationv1beta1.Update).
+		WithManager(mgr).
+		ForType(&jindrav1alpha1.JindraPipeline{}).
+		Handlers(&jindrapipeline.PipelineValidator{}).
+		Build()
+	if err != nil {
+		log.Error(err, "unable to setup validating webhook")
+		os.Exit(1)
+	}
+
+	log.Info("setting up webhook server")
+	xxx := false
+	as, err := webhook.NewServer("jindra-pipeline-admission-server", mgr, webhook.ServerOptions{
+		Port:                          9876,
+		CertDir:                       "/tmp/cert",
+		DisableWebhookConfigInstaller: &xxx,
+		BootstrapOptions: &webhook.BootstrapOptions{
+			Service: &webhook.Service{
+				Namespace: "jindra",
+				Name:      "jindra-admission-server-service",
+				// Selectors should select the pods that runs this webhook server.
+				Selectors: map[string]string{
+					"jindra-component": "operator",
+				},
+			},
+		},
+	})
+
+	if err != nil {
+		log.Error(err, "unable to create a new webhook server")
+		os.Exit(1)
+	}
+
+	log.Info("registering webhooks to the webhook server")
+	err = as.Register(validatingWebhook)
+	if err != nil {
+		log.Error(err, "unable to register webhooks in the admission server")
+		os.Exit(1)
 	}
 
 	log.Info("Starting the Cmd.")

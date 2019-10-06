@@ -1,24 +1,36 @@
 package v1alpha1
 
 import (
+	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// JindraPipelineSpecTrigger defines a pipeline trigger and the cron schedule when the checks
+// JindraPipelineResourcesTrigger defines a pipeline trigger and the cron schedule when the checks
 // for new versions should be done
 // +k8s:openapi-gen=true
-type JindraPipelineSpecTrigger struct {
+type JindraPipelineResourcesTrigger struct {
 	Name     string `json:"name"`
 	Schedule string `json:"schedule"`
+}
+
+// JindraPipelineResources defines a pipeline resources
+// for new versions should be done
+// +k8s:openapi-gen=true
+type JindraPipelineResources struct {
+	Triggers   []JindraPipelineResourcesTrigger `json:"triggers"`
+	Containers []core.Container                 `json:"containers"`
 }
 
 // JindraPipelineSpec defines the desired state of JindraPipeline
 // +k8s:openapi-gen=true
 type JindraPipelineSpec struct {
-	Resources []JindraPipelineSpecTrigger `json:"resources"`
+	Resources JindraPipelineResources `json:"resources"`
+	Stages    []core.Pod              `json:"stages"`
+	OnSuccess core.Pod                `json:"onSuccess"`
+	OnError   core.Pod                `json:"onError"`
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
@@ -27,6 +39,7 @@ type JindraPipelineSpec struct {
 // JindraPipelineStatus defines the observed state of JindraPipeline
 // +k8s:openapi-gen=true
 type JindraPipelineStatus struct {
+	BuildNo int `json:"buildNo"`
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html

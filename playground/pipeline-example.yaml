@@ -1,4 +1,4 @@
-apiVersion: v1
+apiVersion: jindra.io/v1alpha1
 kind: JindraPipeline
 metadata:
   name: http-fs
@@ -23,9 +23,9 @@ spec:
         env:
           - {name: "registry-image.params.image",      value: "./image.tar" }
           - {name: "registry-image.source.debug",      value: "true" }
-          - {name: "registry-image.source.password",   valueFrom: { secretKeyRef: { name: "dockerhub", key: "password" } } }
           - {name: "registry-image.source.repository", value: "kesselborntests/jindratest" }
           - {name: "registry-image.source.tag",        value: "42" }
+          - {name: "registry-image.source.password",   valueFrom: { secretKeyRef: { name: "dockerhub", key: "password" } } }
           - {name: "registry-image.source.username",   valueFrom: { secretKeyRef: { name: "dockerhub", key: "username" } } }
 
       - name: slack
@@ -78,20 +78,20 @@ spec:
               - image
 
   onSuccess:
-    - metadata:
-        annotations:
-          jindra.io/outputs: slack
-          # attachements: https://api.slack.com/tools/block-kit-builder (newer) or https://api.slack.com/docs/messages/builder
-          jindra.io/outputs-envs: |
-            slack.params.text=Job succeeded
-            slack.params.icon_emoji=":ghost:"
-            slack.params.attachments='[{"color":"#00ff00","text":"hihihi"}]'
+    metadata:
+      annotations:
+        jindra.io/outputs: slack
+        # attachements: https://api.slack.com/tools/block-kit-builder (newer) or https://api.slack.com/docs/messages/builder
+        jindra.io/outputs-envs: |
+          slack.params.text=Job succeeded
+          slack.params.icon_emoji=":ghost:"
+          slack.params.attachments='[{"color":"#00ff00","text":"hihihi"}]'
 
-  onFailure:
-    - metadata:
-        annotations:
-          jindra.io/outputs: slack
-          jindra.io/outputs-envs: |
-            slack.params.text=Job failed
-            slack.params.icon_emoji=":angry:"
-            slack.params.attachements='[{"color":"#ff0000","pretext":"hihihi"}]'
+  onError:
+    metadata:
+      annotations:
+        jindra.io/outputs: slack
+        jindra.io/outputs-envs: |
+          slack.params.text=Job failed
+          slack.params.icon_emoji=":angry:"
+          slack.params.attachements='[{"color":"#ff0000","pretext":"hihihi"}]'
