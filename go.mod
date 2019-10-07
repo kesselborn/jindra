@@ -1,9 +1,11 @@
 module github.com/kesselborn/jindra
 
 require (
+	github.com/ghodss/yaml v1.0.0
 	github.com/go-openapi/spec v0.19.0
 	github.com/operator-framework/operator-sdk v0.10.1-0.20191002141136-1a5772eb7185
 	github.com/spf13/pflag v1.0.3
+	gopkg.in/yaml.v2 v2.2.2
 	k8s.io/api v0.0.0-20190612125737-db0771252981
 	k8s.io/apimachinery v0.0.0-20190612125636-6a5db36e93ad
 	k8s.io/client-go v11.0.0+incompatible

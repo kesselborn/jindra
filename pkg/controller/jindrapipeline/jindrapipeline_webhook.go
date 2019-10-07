@@ -1,5 +1,7 @@
 package jindrapipeline
 
+// https://github.com/kubernetes-sigs/controller-runtime/blob/f1eaba5087d69cebb154c6a48193e6667f5b512c/example/main.go
+
 // +kubebuilder:webhook:verbs=create,path=/validate-batch-tutorial-kubebuilder-io-v1-cronjob,mutating=false,failurePolicy=fail,groups=jindra.io,resources=jindrapipelines,versions=v1alpha1,name=jindrapipeline.jindra.io
 
 import (
@@ -25,6 +27,7 @@ type PipelineValidator struct {
 
 var _ admission.Handler = &PipelineValidator{}
 
+// https://github.com/kubernetes/apimachinery/blob/master/pkg/apis/meta/v1/types.go#L506 <- dry run pods
 func (v *PipelineValidator) Handle(ctx context.Context, req types.Request) types.Response {
 	webhooklog.Info("validating pipeline")
 
