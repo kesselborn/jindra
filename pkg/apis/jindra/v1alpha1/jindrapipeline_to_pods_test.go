@@ -135,3 +135,6 @@ func TestStage01Config(t *testing.T) {
 	}
 
 }
+
+// TODO: test duplicate resource name
+// TODO: more complex case of wait-for

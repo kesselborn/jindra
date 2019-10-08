@@ -15,7 +15,7 @@ spec:
       - name: git
         image: concourse/git-resource
         env:
-          - { name: "git.source.uri",                 value: "git@github.com/kesselborn/jindra" }
+          - { name: "git.source.uri",                 value: "git@github.com:kesselborn/http-fs" }
           - { name: "git.source.private_key",         valueFrom: { secretKeyRef: {name: deploy-key, key: key}} }
 
       - name: registry-image
@@ -45,13 +45,14 @@ spec:
         containers:
           - name: build-go-binary
             image: golang
-            workingDir: ${JINDRA_RESOURCES_DIR}/git
+            workingDir: /jindra/resources/git
             command:
               - sh
-              - -exc
+              - -c
               - |
-                go build -x -o ${JINDRA_TRANSIT_DIR}/http-fs-linux .
-                cp Dockerfile.hello-world ${JINDRA_TRANSIT_DIR}/Dockerfile
+                set -xe # fail if any of the command fails
+                go build -x -o /jindra/resources/transit/http-fs-linux .
+                cp Dockerfile.hello-world /jindra/resources/transit/Dockerfile
     - metadata:
         name: build-docker-image
         annotations:
@@ -66,11 +67,11 @@ spec:
             args:
               # where is your Dockerfile and the context
               - --context
-              - /jindra/transit
+              - /jindra/resources/transit
 
               # where to write the image (must match the registry-image.params.image setting from the resource)
               - --tarPath
-              - ${JINDRA_RESOURCES_DIR}/registry-image/image.tar
+              - /jindra/resources/registry-image/image.tar
 
               # don't change
               - --no-push
