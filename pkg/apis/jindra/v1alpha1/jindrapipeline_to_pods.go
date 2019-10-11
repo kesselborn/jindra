@@ -48,12 +48,26 @@ func getOutResourcesNames(p core.Pod) []string {
 }
 
 func getResourceNames(p core.Pod) []string {
-	return append(getInResourcesNames(p), getOutResourcesNames(p)...)
+	nameMarker := map[string]bool{}
+	names := []string{}
+
+	for _, name := range append(getInResourcesNames(p), getOutResourcesNames(p)...) {
+		if _, ok := nameMarker[name]; !ok {
+			names = append(names, name)
+			nameMarker[name] = true
+		}
+	}
+
+	return names
 }
 
 func volumes(resources []string) []core.Volume {
 	volumes := []core.Volume{}
-	emptyDirVolumes := append(resources, "jindra-tools", "jindra-semaphores")
+	emptyDirVolumes := []string{"jindra-tools", "jindra-semaphores"}
+	for _, name := range resources {
+		emptyDirVolumes = append(emptyDirVolumes, resourceVolumePrefix+name)
+	}
+
 	for _, name := range emptyDirVolumes {
 		volumes = append(volumes, core.Volume{
 			Name: name,
@@ -100,20 +114,22 @@ func setDefaults(p *core.Pod) {
 	p.Spec.RestartPolicy = core.RestartPolicyNever
 
 	for i, c := range p.Spec.Containers {
-		setVolumeMounts(&c, getResourceNames(*p))
-		// TODO: make this nicer
-		p.Spec.Containers[i] = c
+		p.Spec.Containers[i].VolumeMounts = append(p.Spec.Containers[i].VolumeMounts, getVolumeMounts(c, getResourceNames(*p))...)
 	}
 
 }
 
-func setVolumeMounts(c *core.Container, resources []string) {
+func getVolumeMounts(c core.Container, resources []string) []core.VolumeMount {
+	mounts := []core.VolumeMount{}
+
 	for _, r := range resources {
-		c.VolumeMounts = append(c.VolumeMounts, core.VolumeMount{
-			Name:      r,
+		mounts = append(mounts, core.VolumeMount{
+			Name:      resourceVolumePrefix + r,
 			MountPath: path.Join(resourcesPrefixPath, r),
 		})
 	}
+
+	return mounts
 }
 
 func getContainerNames(p core.Pod) []string {
@@ -134,16 +150,11 @@ func getInitContainerNames(p core.Pod) []string {
 	return names
 }
 
-func jindraContainers(p core.Pod, stageName string, waitFor string, ppl JindraPipeline) []core.Container {
-	toolsMount := core.VolumeMount{Name: "jindra-tools", MountPath: toolsPrefixPath, ReadOnly: true}
-	semaphoreMount := core.VolumeMount{Name: "jindra-semaphores", MountPath: semaphoresPrefixPath}
-
-	containers := append(p.Spec.Containers, []core.Container{
-		{
-			Name:  "jindra-watcher",
-			Image: "alpine",
-			Args: []string{
-				"sh", "-c", fmt.Sprintf(`printf "waiting for steps to finish "
+func jindraWatcherContainer(stageName, waitFor string, semaphoreMount core.VolumeMount) core.Container {
+	return core.Container{
+		Name:  "jindra-watcher",
+		Image: "alpine",
+		Args: []string{"sh", "-c", fmt.Sprintf(`printf "waiting for steps to finish "
 while ! wget -qO- ${MY_IP}:8080/pod/${MY_NAME}.%s?containers=%s|grep Completed &>/dev/null
 do
   printf "."
@@ -152,15 +163,48 @@ done
 echo
 rm %s
 `, stageName, waitFor, path.Join(semaphoresPrefixPath, "steps-running")),
-			},
-			Env: []core.EnvVar{
-				{Name: "JOB_IP", Value: "${MY_IP}"},
-			},
-			VolumeMounts: []core.VolumeMount{
-				semaphoreMount,
-			},
 		},
-	}...)
+		Env: []core.EnvVar{
+			{Name: "JOB_IP", Value: "${MY_IP}"},
+		},
+		VolumeMounts: []core.VolumeMount{
+			semaphoreMount,
+		},
+	}
+}
+
+func jindraDebugContainer(toolsMount, semaphoreMount core.VolumeMount, resourceNames []string) core.Container {
+	c := core.Container{
+		Name:  "jindra-debug-container",
+		Image: "alpine",
+		Args:  []string{"sh", "-c", "sleep 600"},
+		Env: []core.EnvVar{
+			{Name: "JOB_IP", Value: "${MY_IP}"},
+		},
+		VolumeMounts: []core.VolumeMount{
+			toolsMount,
+			semaphoreMount,
+		},
+	}
+
+	for _, resource := range resourceNames {
+		c.VolumeMounts = append(c.VolumeMounts,
+			core.VolumeMount{Name: resourceVolumePrefix + resource, MountPath: path.Join(resourcesPrefixPath, resource)},
+		)
+	}
+
+	return c
+}
+
+func jindraContainers(p core.Pod, stageName string, waitFor string, ppl JindraPipeline) []core.Container {
+	toolsMount := core.VolumeMount{Name: "jindra-tools", MountPath: toolsPrefixPath, ReadOnly: true}
+	semaphoreMount := core.VolumeMount{Name: "jindra-semaphores", MountPath: semaphoresPrefixPath}
+
+	containers := append(p.Spec.Containers, jindraWatcherContainer(stageName, waitFor, semaphoreMount))
+
+	if p.Annotations[debugContainerAnnotationKey] == "enable" {
+		containers = append(containers, jindraDebugContainer(toolsMount, semaphoreMount, getResourceNames(p)))
+	}
 
 	semaphoreMount.ReadOnly = true
 
@@ -172,7 +216,7 @@ rm %s
 			continue
 		}
 		c.VolumeMounts = append(c.VolumeMounts, []core.VolumeMount{
-			{Name: outName, MountPath: path.Join(resourcesPrefixPath, outName)},
+			{Name: resourceVolumePrefix + outName, MountPath: path.Join(resourcesPrefixPath, outName)},
 			toolsMount,
 			semaphoreMount,
 		}...)
@@ -210,6 +254,7 @@ func getResource(ppl JindraPipeline, name string) (core.Container, error) {
 				{Name: "transit.source.base_dir", Value: "/tmp"},
 				{Name: "transit.source.user", Value: "root"},
 				{Name: "transit.source.disable_version_path", Value: "true"},
+				{Name: "transit.version", Value: `{"ref":"tmp"}`},
 				{Name: "transit.source.private_key", ValueFrom: &core.EnvVarSource{
 					SecretKeyRef: &core.SecretKeySelector{
 						Key:                  "priv",
@@ -264,7 +309,7 @@ func jindraInitContainers(p core.Pod, ppl JindraPipeline) []core.Container {
 			continue
 		}
 		c.VolumeMounts = append(c.VolumeMounts, []core.VolumeMount{
-			{Name: inName, MountPath: path.Join(resourcesPrefixPath, inName)},
+			{Name: resourceVolumePrefix + inName, MountPath: path.Join(resourcesPrefixPath, inName)},
 			toolsMount,
 		}...)
 		c.Name = inResourceContainerNamePrefix + c.Name

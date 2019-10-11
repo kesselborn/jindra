@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ghodss/yaml"
+	core "k8s.io/api/core/v1"
 )
 
 func getExamplePipeline(t *testing.T) JindraPipeline {
@@ -96,27 +97,25 @@ func interface2yaml(x interface{}) string {
 	return string(b)
 }
 
-func fileContents(file string) interface{} {
+func fileContents(file string) *core.Pod {
 	content, err := ioutil.ReadFile(file)
 	if err != nil {
 		return nil
 	}
 
-	var data interface{}
+	var data core.Pod
 	err = yaml.Unmarshal(content, &data)
 	if err != nil {
 		panic(err)
 	}
 
-	return data
+	return &data
 }
 
-func TestStage01Config(t *testing.T) {
+func TestStageConfigs(t *testing.T) {
 	p := getExamplePipeline(t)
 
 	config, err := pipelineConfigs(p, 42)
-
-	t.Logf("%#v", fileContents("../../../../playground/jindra.http-fs-42.01-build-binary.yaml"))
 
 	for i, test := range []struct {
 		got         interface{}
@@ -125,7 +124,11 @@ func TestStage01Config(t *testing.T) {
 	}{
 		{err, nil, "should not error out"},
 		{len(config), 2, "pipeline should have two stage pods"},
-		{config[0]["jindra.http-fs-42.01-build-go-binary.yaml"], fileContents("../../../../playground/jindra.http-fs-42.01-build-binary.yaml"), "stage 01 should be correct"},
+		{config[0]["jindra.http-fs-42.01-build-go-binary.yaml"] != nil, true, "stage 01 config exists"},
+		{*config[0]["jindra.http-fs-42.01-build-go-binary.yaml"], *fileContents("../../../../playground/jindra.http-fs-42.01-build-go-binary.yaml"), "stage 01 should be correct"},
+
+		{config[1]["jindra.http-fs-42.02-build-docker-image.yaml"] != nil, true, "stage 02 config exists"},
+		{*config[1]["jindra.http-fs-42.02-build-docker-image.yaml"], *fileContents("../../../../playground/jindra.http-fs-42.02-build-docker-image.yaml"), "stage 01 should be correct"},
 	} {
 		if reflect.DeepEqual(test.expectation, test.got) {
 			t.Logf("\t%2d: %-80s %s", i, test.desc, ok())

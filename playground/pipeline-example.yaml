@@ -56,8 +56,9 @@ spec:
     - metadata:
         name: build-docker-image
         annotations:
+          jindra.io/debug-container: enable
           jindra.io/inputs: transit
-          jindra.io/outputs: registry-image
+          jindra.io/outputs: transit,registry-image
           jindra.io/outputs-envs: |
             registry-image.params.image=./image.tar
       spec:
