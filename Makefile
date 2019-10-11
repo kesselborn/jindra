@@ -3,6 +3,9 @@ GO_FILES=${shell find . -name "*.go"}
 
 build: build/_output/bin/jindra
 
+test:
+	cd pkg/jindra && go test -v
+
 local: docker-image
 	- kubectl create -f deploy/crds/jindra_v1alpha1_jindrapipeline_crd.yaml
 	OPERATOR_NAME=jindra operator-sdk up local --namespace=jindra

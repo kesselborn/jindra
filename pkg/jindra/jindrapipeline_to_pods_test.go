@@ -1,4 +1,4 @@
-package v1alpha1
+package jindra
 
 import (
 	"encoding/json"
@@ -8,11 +8,12 @@ import (
 	"testing"
 
 	"github.com/ghodss/yaml"
+	jindra "github.com/kesselborn/jindra/pkg/apis/jindra/v1alpha1"
 	core "k8s.io/api/core/v1"
 )
 
-func getExamplePipeline(t *testing.T) JindraPipeline {
-	examplePipeline := "../../../../playground/pipeline-example.yaml"
+func getExamplePipeline(t *testing.T) jindra.JindraPipeline {
+	examplePipeline := "../../playground/pipeline-example.yaml"
 	yamlData, err := ioutil.ReadFile(examplePipeline)
 	if err != nil {
 		t.Fatalf("error reading example pipeline file: %s: %s", examplePipeline, err)
@@ -24,7 +25,7 @@ func getExamplePipeline(t *testing.T) JindraPipeline {
 		t.Fatalf("cannot convert yaml to json data: %s", err)
 	}
 
-	var p JindraPipeline
+	var p jindra.JindraPipeline
 	err = json.Unmarshal(jsonData, &p)
 	if err != nil {
 		t.Fatalf("cannot unmarshal json data %s: %s", string(jsonData), err)
@@ -115,20 +116,23 @@ func fileContents(file string) *core.Pod {
 func TestStageConfigs(t *testing.T) {
 	p := getExamplePipeline(t)
 
-	config, err := pipelineConfigs(p, 42)
+	configs, configsErr := pipelineConfigs(p, 42)
+	// configMap, configMapErr := pipelineRunConfigmap(p, 42)
 
 	for i, test := range []struct {
 		got         interface{}
 		expectation interface{}
 		desc        string
 	}{
-		{err, nil, "should not error out"},
-		{len(config), 2, "pipeline should have two stage pods"},
-		{config[0]["jindra.http-fs-42.01-build-go-binary.yaml"] != nil, true, "stage 01 config exists"},
-		{*config[0]["jindra.http-fs-42.01-build-go-binary.yaml"], *fileContents("../../../../playground/jindra.http-fs-42.01-build-go-binary.yaml"), "stage 01 should be correct"},
+		{configsErr, nil, "should not error out"},
+		{len(configs), 2, "pipeline should have two stage pods"},
+		{configs[0]["jindra.http-fs-42.01-build-go-binary.yaml"] != nil, true, "stage 01 config exists"},
+		{*configs[0]["jindra.http-fs-42.01-build-go-binary.yaml"], *fileContents("../../playground/jindra.http-fs-42.01-build-go-binary.yaml"), "stage 01 should be correct"},
 
-		{config[1]["jindra.http-fs-42.02-build-docker-image.yaml"] != nil, true, "stage 02 config exists"},
-		{*config[1]["jindra.http-fs-42.02-build-docker-image.yaml"], *fileContents("../../../../playground/jindra.http-fs-42.02-build-docker-image.yaml"), "stage 01 should be correct"},
+		{configs[1]["jindra.http-fs-42.02-build-docker-image.yaml"] != nil, true, "stage 02 config exists"},
+		{*configs[1]["jindra.http-fs-42.02-build-docker-image.yaml"], *fileContents("../../playground/jindra.http-fs-42.02-build-docker-image.yaml"), "stage 02 should be correct"},
+
+		{configsErr, nil, "should not error out"},
 	} {
 		if reflect.DeepEqual(test.expectation, test.got) {
 			t.Logf("\t%2d: %-80s %s", i, test.desc, ok())

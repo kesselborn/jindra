@@ -1,4 +1,4 @@
-package v1alpha1
+package jindra
 
 import (
 	"fmt"
@@ -6,11 +6,12 @@ import (
 	"path"
 	"strings"
 
+	jindra "github.com/kesselborn/jindra/pkg/apis/jindra/v1alpha1"
 	core "k8s.io/api/core/v1"
 )
 
-// JindraPipelineRunConfigs keeps pod configurations for the pipeline run
-type JindraPipelineRunConfigs []map[string]*core.Pod
+// PipelineRunConfigs keeps pod configurations for the pipeline run
+type PipelineRunConfigs []map[string]*core.Pod
 
 var nodeAffinity = core.NodeAffinity{
 	PreferredDuringSchedulingIgnoredDuringExecution: []core.PreferredSchedulingTerm{
@@ -196,7 +197,7 @@ func jindraDebugContainer(toolsMount, semaphoreMount core.VolumeMount, resourceN
 	return c
 }
 
-func jindraContainers(p core.Pod, stageName string, waitFor string, ppl JindraPipeline) []core.Container {
+func jindraContainers(p core.Pod, stageName string, waitFor string, ppl jindra.JindraPipeline) []core.Container {
 	toolsMount := core.VolumeMount{Name: "jindra-tools", MountPath: toolsPrefixPath, ReadOnly: true}
 	semaphoreMount := core.VolumeMount{Name: "jindra-semaphores", MountPath: semaphoresPrefixPath}
 
@@ -236,7 +237,7 @@ func jindraContainers(p core.Pod, stageName string, waitFor string, ppl JindraPi
 	return containers
 }
 
-func getResource(ppl JindraPipeline, name string) (core.Container, error) {
+func getResource(ppl jindra.JindraPipeline, name string) (core.Container, error) {
 	for _, c := range ppl.Spec.Resources.Containers {
 		if c.Name == name {
 			return c, nil
@@ -268,7 +269,7 @@ func getResource(ppl JindraPipeline, name string) (core.Container, error) {
 	return core.Container{}, fmt.Errorf("there is no resource with name %s", name)
 }
 
-func jindraInitContainers(p core.Pod, ppl JindraPipeline) []core.Container {
+func jindraInitContainers(p core.Pod, ppl jindra.JindraPipeline) []core.Container {
 	createLocksSrc := []string{
 		"touch " + path.Join(semaphoresPrefixPath, "steps-running"),
 		"touch " + path.Join(semaphoresPrefixPath, "outputs-running"),
@@ -328,8 +329,8 @@ func jindraInitContainers(p core.Pod, ppl JindraPipeline) []core.Container {
 	return initContainers
 }
 
-func pipelineConfigs(ppl JindraPipeline, buildNo int) (JindraPipelineRunConfigs, error) {
-	config := JindraPipelineRunConfigs{}
+func pipelineConfigs(ppl jindra.JindraPipeline, buildNo int) (PipelineRunConfigs, error) {
+	config := PipelineRunConfigs{}
 	ppl.Status.BuildNo = buildNo
 
 	for i, stage := range ppl.Spec.Stages {

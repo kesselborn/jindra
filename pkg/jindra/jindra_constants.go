@@ -1,4 +1,4 @@
-package v1alpha1
+package jindra
 
 const (
 	inResourceAnnotationKey     = "jindra.io/inputs"
