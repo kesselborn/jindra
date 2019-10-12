@@ -112,6 +112,10 @@ func setDefaults(p *core.Pod) {
 		p.Labels["jindra.io/uid"] = "${MY_UID}"
 	}
 
+	if p.Annotations == nil {
+		p.Annotations = map[string]string{}
+	}
+
 	p.Spec.RestartPolicy = core.RestartPolicyNever
 
 	for i, c := range p.Spec.Containers {
@@ -209,12 +213,25 @@ func jindraContainers(p core.Pod, stageName string, waitFor string, ppl jindra.J
 
 	semaphoreMount.ReadOnly = true
 
+	outResourceEnvs := map[string][]core.EnvVar{}
+	annotation, ok := p.Annotations[outResourceEnvAnnotationKey]
+
+	if ok {
+		outResourceEnvs = annotationToEnv(annotation)
+	}
+
 	for _, outName := range getOutResourcesNames(p) {
 		c, err := getResource(ppl, outName)
 		if err != nil {
 			// TODO: use logger
 			fmt.Fprintf(os.Stderr, "error creating init container: %s", err)
 			continue
+		}
+		if _, ok := outResourceEnvs[outName]; ok {
+			if c.Env == nil {
+				c.Env = []core.EnvVar{}
+			}
+			c.Env = append(c.Env, outResourceEnvs[outName]...)
 		}
 		c.VolumeMounts = append(c.VolumeMounts, []core.VolumeMount{
 			{Name: resourceVolumePrefix + outName, MountPath: path.Join(resourcesPrefixPath, outName)},
@@ -302,12 +319,25 @@ func jindraInitContainers(p core.Pod, ppl jindra.JindraPipeline) []core.Containe
 
 	toolsMount.ReadOnly = true
 
+	inResourceEnvs := map[string][]core.EnvVar{}
+	annotation, ok := p.Annotations[inResourceEnvAnnotationKey]
+
+	if ok {
+		inResourceEnvs = annotationToEnv(annotation)
+	}
+
 	for _, inName := range getInResourcesNames(p) {
 		c, err := getResource(ppl, inName)
 		if err != nil {
 			// TODO: use logger
 			fmt.Fprintf(os.Stderr, "error creating init container: %s", err)
 			continue
+		}
+		if _, ok := inResourceEnvs[inName]; ok {
+			if c.Env == nil {
+				c.Env = []core.EnvVar{}
+			}
+			c.Env = append(c.Env, inResourceEnvs[inName]...)
 		}
 		c.VolumeMounts = append(c.VolumeMounts, []core.VolumeMount{
 			{Name: resourceVolumePrefix + inName, MountPath: path.Join(resourcesPrefixPath, inName)},
@@ -329,11 +359,34 @@ func jindraInitContainers(p core.Pod, ppl jindra.JindraPipeline) []core.Containe
 	return initContainers
 }
 
+func annotationToEnv(annotation string) map[string][]core.EnvVar {
+	e := map[string][]core.EnvVar{}
+
+	for _, envvar := range strings.Split(annotation, "\n") {
+		key := strings.Split(strings.TrimLeft(envvar, " 	"), ".")[0]
+		tokens := strings.SplitN(strings.TrimLeft(envvar, " 	"), "=", 2)
+		if len(tokens) != 2 {
+			continue
+		}
+
+		if _, ok := e[key]; ok {
+			e[key] = append(e[key], core.EnvVar{Name: tokens[0], Value: tokens[1]})
+		} else {
+			e[key] = []core.EnvVar{{Name: tokens[0], Value: tokens[1]}}
+		}
+	}
+
+	return e
+}
+
 func pipelineConfigs(ppl jindra.JindraPipeline, buildNo int) (PipelineRunConfigs, error) {
 	config := PipelineRunConfigs{}
 	ppl.Status.BuildNo = buildNo
 
-	for i, stage := range ppl.Spec.Stages {
+	for i, stage := range append(ppl.Spec.Stages, ppl.Spec.OnSuccess, ppl.Spec.OnError, ppl.Spec.Final) {
+		if stage.Name == "" && stage.Annotations == nil {
+			continue
+		}
 		setDefaults(&stage)
 		stage.Annotations[waitForAnnotationKey] = strings.Join(getWaitFor(stage), ",")
 

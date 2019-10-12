@@ -1,4 +1,4 @@
-package jindra
+package v1alpha1
 
 import (
 	"encoding/json"
@@ -8,12 +8,11 @@ import (
 	"testing"
 
 	"github.com/ghodss/yaml"
-	jindra "github.com/kesselborn/jindra/pkg/apis/jindra/v1alpha1"
 	core "k8s.io/api/core/v1"
 )
 
-func getExamplePipeline(t *testing.T) jindra.JindraPipeline {
-	examplePipeline := "../../playground/pipeline-example.yaml"
+func getExamplePipeline(t *testing.T) JindraPipeline {
+	examplePipeline := "../../../../playground/pipeline-example.yaml"
 	yamlData, err := ioutil.ReadFile(examplePipeline)
 	if err != nil {
 		t.Fatalf("error reading example pipeline file: %s: %s", examplePipeline, err)
@@ -25,7 +24,7 @@ func getExamplePipeline(t *testing.T) jindra.JindraPipeline {
 		t.Fatalf("cannot convert yaml to json data: %s", err)
 	}
 
-	var p jindra.JindraPipeline
+	var p JindraPipeline
 	err = json.Unmarshal(jsonData, &p)
 	if err != nil {
 		t.Fatalf("cannot unmarshal json data %s: %s", string(jsonData), err)
@@ -116,29 +115,20 @@ func fileContents(file string) *core.Pod {
 func TestStageConfigs(t *testing.T) {
 	p := getExamplePipeline(t)
 
-	configs, configsErr := pipelineConfigs(p, 42)
-	// configMap, configMapErr := pipelineRunConfigmap(p, 42)
+	config, err := pipelineConfigs(p, 42)
 
 	for i, test := range []struct {
 		got         interface{}
 		expectation interface{}
 		desc        string
 	}{
-		{configsErr, nil, "should not error out"},
-		{len(configs), 5, "pipeline should have four configs"},
-		{configs[0]["jindra.http-fs-42.01-build-go-binary.yaml"] != nil, true, "stage 01 config exists"},
-		{*configs[0]["jindra.http-fs-42.01-build-go-binary.yaml"], *fileContents("../../playground/jindra.http-fs-42.01-build-go-binary.yaml"), "stage 01 should be correct"},
+		{err, nil, "should not error out"},
+		{len(config), 5, "pipeline should have two stage pods"},
+		{config[0]["jindra.http-fs-42.01-build-go-binary.yaml"] != nil, true, "stage 01 config exists"},
+		{*config[0]["jindra.http-fs-42.01-build-go-binary.yaml"], *fileContents("../../../../playground/jindra.http-fs-42.01-build-go-binary.yaml"), "stage 01 should be correct"},
 
-		{configs[1]["jindra.http-fs-42.02-build-docker-image.yaml"] != nil, true, "stage 02 config exists"},
-		{*configs[1]["jindra.http-fs-42.02-build-docker-image.yaml"], *fileContents("../../playground/jindra.http-fs-42.02-build-docker-image.yaml"), "stage 02 should be correct"},
-
-		{configs[2]["jindra.http-fs-42.03-on-success.yaml"] != nil, true, "on success config exists"},
-		{*configs[2]["jindra.http-fs-42.03-on-success.yaml"], *fileContents("../../playground/jindra.http-fs-42.03-on-success.yaml"), "on success should be correct"},
-
-		{configs[3]["jindra.http-fs-42.04-on-error.yaml"] != nil, true, "on error config exists"},
-		{*configs[3]["jindra.http-fs-42.04-on-error.yaml"], *fileContents("../../playground/jindra.http-fs-42.04-on-error.yaml"), "on error should be correct"},
-
-		{configsErr, nil, "should not error out"},
+		{config[1]["jindra.http-fs-42.02-build-docker-image.yaml"] != nil, true, "stage 02 config exists"},
+		{*config[1]["jindra.http-fs-42.02-build-docker-image.yaml"], *fileContents("../../../../playground/jindra.http-fs-42.02-build-docker-image.yaml"), "stage 01 should be correct"},
 	} {
 		if reflect.DeepEqual(test.expectation, test.got) {
 			t.Logf("\t%2d: %-80s %s", i, test.desc, ok())
@@ -149,28 +139,4 @@ func TestStageConfigs(t *testing.T) {
 
 }
 
-func TestAnnotationEnvConverter(t *testing.T) {
-	annotation := `
-          slack.params.text=Job succeeded
-          slack.params.icon_emoji=":ghost:"
-          slack.params.attachments='[{"color":"#00ff00","text":"hihihi"}]'
-		  rsync.params.foo="bar"
-		  rsync.source.url="rsync://foo.bar"
-	`
-
-	expectedSlackEnv := []core.EnvVar{
-		{Name: "slack.params.text", Value: "Job succeeded"},
-		{Name: "slack.params.icon_emoji", Value: "\":ghost:\""},
-		{Name: "slack.params.attachments", Value: "'[{\"color\":\"#00ff00\",\"text\":\"hihihi\"}]'"},
-	}
-
-	e := annotationToEnv(annotation)
-
-	if !reflect.DeepEqual(expectedSlackEnv, e["slack"]) {
-		t.Fatalf("\t%2d: %-80s %s", 0, "converting env annotation failed", errMsg(t, expectedSlackEnv, e))
-	}
-}
-
-// TODO: test duplicate resource name
 // TODO: more complex case of wait-for
-// TODO: test naming of files if no onSuccess / onError exists

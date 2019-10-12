@@ -160,8 +160,13 @@ func schema_pkg_apis_jindra_v1alpha1_JindraPipelineSpec(ref common.ReferenceCall
 							Ref: ref("k8s.io/api/core/v1.Pod"),
 						},
 					},
+					"final": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("k8s.io/api/core/v1.Pod"),
+						},
+					},
 				},
-				Required: []string{"resources", "stages", "onSuccess", "onError"},
+				Required: []string{"resources", "stages", "onSuccess", "onError", "final"},
 			},
 		},
 		Dependencies: []string{

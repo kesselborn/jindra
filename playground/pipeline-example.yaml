@@ -81,19 +81,33 @@ spec:
 
   onSuccess:
     metadata:
+      name: on-success
       annotations:
+        jindra.io/inputs: transit
         jindra.io/outputs: slack
         # attachements: https://api.slack.com/tools/block-kit-builder (newer) or https://api.slack.com/docs/messages/builder
         jindra.io/outputs-envs: |
           slack.params.text=Job succeeded
-          slack.params.icon_emoji=":ghost:"
-          slack.params.attachments='[{"color":"#00ff00","text":"hihihi"}]'
+          slack.params.icon_emoji=:ghost:
+          slack.params.attachments=[{"color":"#00ff00","text":"hihihi"}]
 
   onError:
     metadata:
+      name: on-error
       annotations:
         jindra.io/outputs: slack
         jindra.io/outputs-envs: |
           slack.params.text=Job failed
-          slack.params.icon_emoji=":angry:"
-          slack.params.attachements='[{"color":"#ff0000","pretext":"hihihi"}]'
+          slack.params.icon_emoji=:angry:
+          slack.params.attachments=[{"color":"#ff0000","text":"fuck sake"}]
+
+
+  final:
+    metadata:
+      name: final
+      annotations:
+        jindra.io/outputs: slack
+        jindra.io/outputs-envs: |
+          slack.params.text=Finalizer
+          slack.params.icon_emoji=:angry:
+          slack.params.attachments=[{"color":"#ff0000","pretext":"hohoho"}]

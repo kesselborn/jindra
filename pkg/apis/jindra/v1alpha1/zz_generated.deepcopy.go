@@ -127,6 +127,7 @@ func (in *JindraPipelineSpec) DeepCopyInto(out *JindraPipelineSpec) {
 	}
 	in.OnSuccess.DeepCopyInto(&out.OnSuccess)
 	in.OnError.DeepCopyInto(&out.OnError)
+	in.Final.DeepCopyInto(&out.Final)
 	return
 }
 

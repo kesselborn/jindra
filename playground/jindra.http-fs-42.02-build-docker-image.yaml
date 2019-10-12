@@ -208,6 +208,7 @@ spec:
         - {name: "registry-image.source.tag",        value: "42" }
         - {name: "registry-image.source.password",   valueFrom: { secretKeyRef: { name: "dockerhub", key: "password" } } }
         - {name: "registry-image.source.username",   valueFrom: { secretKeyRef: { name: "dockerhub", key: "username" } } }
+        - {name: "registry-image.params.image",      value: "./image.tar" }
       args:
         - /opt/jindra/bin/env-to-json
         - -prefix

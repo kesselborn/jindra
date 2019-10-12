@@ -6,6 +6,8 @@ const (
 	servicesAnnotationKey       = "jindra.io/services"
 	waitForAnnotationKey        = "jindra.io/wait-for"
 	debugContainerAnnotationKey = "jindra.io/debug-container"
+	inResourceEnvAnnotationKey  = "jindra.io/inputs-envs"
+	outResourceEnvAnnotationKey = "jindra.io/outputs-envs"
 
 	resourcesPrefixPath  = "/jindra/resources"
 	semaphoresPrefixPath = "/var/lock/jindra"

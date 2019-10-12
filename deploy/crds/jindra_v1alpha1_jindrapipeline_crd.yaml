@@ -29,6 +29,8 @@ spec:
           type: object
         spec:
           properties:
+            final:
+              type: object
             onError:
               type: object
             onSuccess:
@@ -64,6 +66,7 @@ spec:
           - stages
           - onSuccess
           - onError
+          - final
           type: object
         status:
           properties:

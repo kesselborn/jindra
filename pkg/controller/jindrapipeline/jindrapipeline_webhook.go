@@ -45,6 +45,10 @@ func (v *PipelineValidator) Handle(ctx context.Context, req types.Request) types
 	return admission.ValidationResponse(allowed, reason)
 }
 
+// TODO: test: trigger not on first stage
+// TODO: default: set names on onSuccess, onFailure and final
+// TODO: duplicate resource names (inputs: transit,transit)
+// TODO: duplicate resource name (two resources, same name)
 func (v *PipelineValidator) validatePipelineFn(ctx context.Context, pipeline *jindrav1alpha1.JindraPipeline) (bool, string, error) {
 	key := "jindra-webhook-test"
 	anno, found := pipeline.Annotations[key]
