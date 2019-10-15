@@ -1,7 +1,6 @@
+/dockerhub-secret.yaml
 /jindra-deploy.key
 /jindra-deploy.key.pub
 /k8sStatusWatcher/kubectl-podstatus
 /rsync
 /rsync.pub
-/rsync.string
-

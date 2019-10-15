@@ -32,7 +32,7 @@ spec:
         image: cfcommunity/slack-notification-resource
         env:
           - { name: "slack.source.url",      valueFrom: { secretKeyRef: { name: "slack", key: "webhook_url" } } }
-          - { name: "slack.params.channel",  value: "deploy" }
+          - { name: "slack.params.channel",  value: "jindra" }
           - { name: "slack.params.username", value: "Alfons" }
 
   stages:
@@ -61,6 +61,7 @@ spec:
           jindra.io/outputs: transit,registry-image
           jindra.io/outputs-envs: |
             registry-image.params.image=./image.tar
+          jindra.io/services: jindra-debug-container 
       spec:
         containers:
           - name: build-docker-image

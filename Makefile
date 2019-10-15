@@ -6,7 +6,6 @@ build: build/_output/bin/jindra
 test:
 	cd pkg/jindra && go test -timeout 30s -v || { test $$? = 1 && vimdiff /tmp/expected /tmp/got; }
 
-
 local: docker-image
 	- kubectl create -f deploy/crds/jindra_v1alpha1_jindrapipeline_crd.yaml
 	OPERATOR_NAME=jindra operator-sdk up local --namespace=jindra

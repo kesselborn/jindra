@@ -126,17 +126,17 @@ func TestStageConfigs(t *testing.T) {
 	}{
 		{configsErr, nil, "should not error out"},
 		{len(configs), 5, "pipeline should have four configs"},
-		{configs[0]["jindra.http-fs-42.01-build-go-binary.yaml"] != nil, true, "stage 01 config exists"},
-		{*configs[0]["jindra.http-fs-42.01-build-go-binary.yaml"], *fileContents("../../playground/jindra.http-fs-42.01-build-go-binary.yaml"), "stage 01 should be correct"},
+		{configs[0]["01-build-go-binary.yaml"] != nil, true, "stage 01 config exists"},
+		{*configs[0]["01-build-go-binary.yaml"], *fileContents("../../playground/jindra.http-fs-42.01-build-go-binary.yaml"), "stage 01 should be correct"},
 
-		{configs[1]["jindra.http-fs-42.02-build-docker-image.yaml"] != nil, true, "stage 02 config exists"},
-		{*configs[1]["jindra.http-fs-42.02-build-docker-image.yaml"], *fileContents("../../playground/jindra.http-fs-42.02-build-docker-image.yaml"), "stage 02 should be correct"},
+		{configs[1]["02-build-docker-image.yaml"] != nil, true, "stage 02 config exists"},
+		{*configs[1]["02-build-docker-image.yaml"], *fileContents("../../playground/jindra.http-fs-42.02-build-docker-image.yaml"), "stage 02 should be correct"},
 
-		{configs[2]["jindra.http-fs-42.03-on-success.yaml"] != nil, true, "on success config exists"},
-		{*configs[2]["jindra.http-fs-42.03-on-success.yaml"], *fileContents("../../playground/jindra.http-fs-42.03-on-success.yaml"), "on success should be correct"},
+		{configs[2]["03-on-success.yaml"] != nil, true, "on success config exists"},
+		{*configs[2]["03-on-success.yaml"], *fileContents("../../playground/jindra.http-fs-42.03-on-success.yaml"), "on success should be correct"},
 
-		{configs[3]["jindra.http-fs-42.04-on-error.yaml"] != nil, true, "on error config exists"},
-		{*configs[3]["jindra.http-fs-42.04-on-error.yaml"], *fileContents("../../playground/jindra.http-fs-42.04-on-error.yaml"), "on error should be correct"},
+		{configs[3]["04-on-error.yaml"] != nil, true, "on error config exists"},
+		{*configs[3]["04-on-error.yaml"], *fileContents("../../playground/jindra.http-fs-42.04-on-error.yaml"), "on error should be correct"},
 
 		{configsErr, nil, "should not error out"},
 	} {

@@ -35,9 +35,19 @@ block_until_finished() {
   local wait_for=$(kubectl get pod ${name} -ojson |jq -r '.metadata.annotations["jindra.io/wait-for"] // empty')
   local outputs=$(kubectl get pod ${name} -ojson |jq -r '.metadata.annotations["jindra.io/outputs"] // empty')
 
+  local outputs_container_names=""
+  for c in $(echo "${outputs}"|tr "," " ")
+  do
+    if [ -n "${outputs_container_names}" ]
+    then
+      outputs_container_names="${outputs_container_names},"
+    fi
+    outputs_container_names="${outputs_container_names}jindra-resource-out-${c}"
+  done
+
   if wait_for_containers ${name} ${wait_for}
   then
-    if wait_for_containers ${name} ${outputs}
+    if wait_for_containers ${name} ${outputs_container_names}
     then
       return 0
     else
@@ -72,7 +82,7 @@ EOF
   fi
 }
 
-cat<<EOF>/tmp/patch.yaml
+cat<<EOF >/tmp/patch.yaml
 metadata:
   labels:
     jindra.io/run: "${JINDRA_PIPELINE_RUN_NO}"
@@ -82,7 +92,7 @@ EOF
 kubectl patch pod ${MY_NAME} --patch "$(cat /tmp/patch.yaml)"
 kubectl patch job jindra.${JINDRA_PIPELINE_NAME}-${JINDRA_PIPELINE_RUN_NO} --patch "$(cat /tmp/patch.yaml)"
 
-cat<<EOF>>/tmp/patch.yaml
+cat<<EOF >>/tmp/patch.yaml
   ownerReferences:
   - apiVersion: batch/v1
     controller: true
@@ -96,7 +106,7 @@ kubectl patch secret jindra.${JINDRA_PIPELINE_NAME}-${JINDRA_PIPELINE_RUN_NO}.rs
 kubectl patch configmap jindra.${JINDRA_PIPELINE_NAME}-${JINDRA_PIPELINE_RUN_NO}.stages --patch "$(cat /tmp/patch.yaml)"
 )
 
-for f in $(ls /jindra/stages/*.yaml|grep -v ".on-failure.yaml$"|grep -v ".on-success.yaml$")
+for f in $(ls /jindra/stages/*.yaml|grep -v "[0-9][0-9]-on-error.yaml$"|grep -v "[0-9][0-9]-on-success.yaml$")
 do
   run_pod $f
   res=$?
@@ -108,9 +118,9 @@ done
 
 if [ "${res}" = "0" ]
 then
-  run_pod /jindra/stages/*.on-success.yaml
+  run_pod /jindra/stages/[0-9][0-9]-on-success.yaml
 else
-  run_pod /jindra/stages/*.on-failure.yaml
+  run_pod /jindra/stages/[0-9][0-9]-on-error.yaml
 fi
 
 rm /jindra/semaphores/stages-running

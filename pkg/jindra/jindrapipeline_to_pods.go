@@ -241,10 +241,8 @@ func jindraContainers(p core.Pod, stageName string, waitFor string, ppl jindra.J
 		c.Name = outResourceContainerNamePrefix + c.Name
 		c.Args = []string{
 			path.Join(toolsPrefixPath, "env-to-json"),
-			"-prefix",
-			outName,
-			"-semaphore-file",
-			path.Join(semaphoresPrefixPath, "steps-running"),
+			"-prefix=" + outName,
+			"-semaphore-file=" + path.Join(semaphoresPrefixPath, "steps-running"),
 			"/opt/resource/out",
 			path.Join(resourcesPrefixPath, outName),
 		}
@@ -346,10 +344,8 @@ func jindraInitContainers(p core.Pod, ppl jindra.JindraPipeline) []core.Containe
 		c.Name = inResourceContainerNamePrefix + c.Name
 		c.Command = []string{
 			path.Join(toolsPrefixPath, "env-to-json"),
-			"-prefix",
-			inName,
-			"-semaphore-file",
-			path.Join(semaphoresPrefixPath, "setting-up-pod"),
+			"-prefix=" + inName,
+			"-semaphore-file=" + path.Join(semaphoresPrefixPath, "setting-up-pod"),
 			"/opt/resource/in",
 			path.Join(resourcesPrefixPath, inName),
 		}
@@ -391,7 +387,7 @@ func pipelineConfigs(ppl jindra.JindraPipeline, buildNo int) (PipelineRunConfigs
 		stage.Annotations[waitForAnnotationKey] = strings.Join(getWaitFor(stage), ",")
 
 		stageName := fmt.Sprintf("%02d-%s", i+1, stage.GetName())
-		name := fmt.Sprintf("jindra.%s-%02d.%s", ppl.ObjectMeta.Name, buildNo, stageName)
+		name := fmt.Sprintf("${MY_NAME}.%s", stageName)
 		stage.SetName(name)
 
 		stage.Spec.Containers = jindraContainers(stage, stageName, strings.Join(getWaitFor(stage), ","), ppl)
@@ -413,7 +409,7 @@ func pipelineConfigs(ppl jindra.JindraPipeline, buildNo int) (PipelineRunConfigs
 			},
 		})
 
-		config = append(config, map[string]*core.Pod{name + ".yaml": stage.DeepCopy()})
+		config = append(config, map[string]*core.Pod{stageName + ".yaml": stage.DeepCopy()})
 	}
 
 	return config, nil

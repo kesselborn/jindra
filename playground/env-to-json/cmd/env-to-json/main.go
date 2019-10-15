@@ -12,7 +12,7 @@ import (
 	envToJSON "github.com/kesselborn/jindra/env-to-json"
 )
 
-func callScript(json string, args []string) {
+func callScript(json string, waitOnFail bool, args []string) {
 	cmd := exec.Command(args[0], args[1:]...)
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
@@ -29,7 +29,10 @@ func callScript(json string, args []string) {
 
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Printf("error executing %s: %s\noutput was: %s\n", json, err, out)
+		log.Printf("error executing script: %s ... execute with options '-wait-on-fail' to leave the container running for 5 more minutes) \noutput was: %s\n", json, err, out)
+		if waitOnFail {
+			time.Sleep(5 * time.Minute)
+		}
 		return
 	}
 
@@ -39,6 +42,7 @@ func callScript(json string, args []string) {
 
 func main() {
 	prefix := flag.String("prefix", "", "env var prefix to include in conversion (must be set)")
+	waitOnFail := flag.Bool("wait-on-fail", false, "leave container live for 5 more minutes if the script fails (for debugging purposes)")
 	semaphoreFile := flag.String("semaphore-file", "", "file to watch ... program will start once this file DOES NOT EXIST")
 	debug := flag.Bool("debug", false, "print debugging info")
 	flag.Parse()
@@ -68,7 +72,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	callScript(s, flag.Args())
+	callScript(s, *waitOnFail, flag.Args())
 
 	if *debug {
 		fmt.Fprintf(os.Stderr, s)
