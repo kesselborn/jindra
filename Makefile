@@ -4,7 +4,7 @@ GO_FILES=${shell find . -name "*.go"}
 build: build/_output/bin/jindra
 
 test:
-	cd pkg/jindra && go test -timeout 30s -v || { test $$? = 1 && vimdiff /tmp/expected /tmp/got; }
+	cd pkg/jindra && go test -timeout 30s -v || { test $$? = 1 && code -d /tmp/expected /tmp/got; }
 
 local: docker-image
 	- kubectl create -f deploy/crds/jindra_v1alpha1_jindrapipeline_crd.yaml

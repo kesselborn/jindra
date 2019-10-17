@@ -1,0 +1,231 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    jindra.io/debug-container: enable
+    jindra.io/inputs: transit
+    jindra.io/outputs: transit,registry-image
+    jindra.io/outputs-envs: |
+      registry-image.params.image=./image.tar
+    jindra.io/services: jindra-debug-container
+    jindra.io/wait-for: build-docker-image
+  creationTimestamp: null
+  labels:
+    jindra.io/uid: ${MY_UID}
+  name: ${MY_NAME}.02-build-docker-image
+spec:
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - preference:
+          matchExpressions:
+          - key: kubernetes.io/hostname
+            operator: In
+            values:
+            - ${MY_NODE_NAME}
+        weight: 1
+  containers:
+  - args:
+    - --context
+    - /jindra/resources/transit
+    - --tarPath
+    - /jindra/resources/registry-image/image.tar
+    - --no-push
+    - --destination
+    - image
+    image: gcr.io/kaniko-project/executor:debug
+    name: build-docker-image
+    resources: {}
+    volumeMounts:
+    - mountPath: /jindra/resources/transit
+      name: jindra-resource-transit
+    - mountPath: /jindra/resources/registry-image
+      name: jindra-resource-registry-image
+  - args:
+    - sh
+    - -c
+    - |
+      printf "waiting for steps to finish "
+      while ! wget -qO- ${MY_IP}:8080/pod/${MY_NAME}.02-build-docker-image?containers=build-docker-image|grep Completed &>/dev/null
+      do
+        printf "."
+        sleep 3
+      done
+      echo
+      rm /var/lock/jindra/steps-running
+    env:
+    - name: JOB_IP
+      value: ${MY_IP}
+    image: alpine
+    name: jindra-watcher
+    resources: {}
+    volumeMounts:
+    - mountPath: /var/lock/jindra
+      name: jindra-semaphores
+  - args:
+    - sh
+    - -c
+    - sleep 600
+    env:
+    - name: JOB_IP
+      value: ${MY_IP}
+    image: alpine
+    name: jindra-debug-container
+    resources: {}
+    volumeMounts:
+    - mountPath: /opt/jindra/bin
+      name: jindra-tools
+      readOnly: true
+    - mountPath: /var/lock/jindra
+      name: jindra-semaphores
+    - mountPath: /jindra/resources/transit
+      name: jindra-resource-transit
+    - mountPath: /jindra/resources/registry-image
+      name: jindra-resource-registry-image
+  - args:
+    - /opt/jindra/bin/env-to-json
+    - -prefix=transit
+    - -semaphore-file=/var/lock/jindra/steps-running
+    - /opt/resource/out
+    - /jindra/resources/transit
+    env:
+    - name: transit.source.server
+      value: ${MY_IP}
+    - name: transit.source.base_dir
+      value: /tmp
+    - name: transit.source.user
+      value: root
+    - name: transit.source.disable_version_path
+      value: "true"
+    - name: transit.version
+      value: '{"ref":"tmp"}'
+    - name: transit.source.private_key
+      valueFrom:
+        secretKeyRef:
+          key: priv
+          name: jindra.http-fs.42.rsync-keys
+    image: mrsixw/concourse-rsync-resource
+    name: jindra-resource-out-transit
+    resources: {}
+    volumeMounts:
+    - mountPath: /jindra/resources/transit
+      name: jindra-resource-transit
+    - mountPath: /opt/jindra/bin
+      name: jindra-tools
+      readOnly: true
+    - mountPath: /var/lock/jindra
+      name: jindra-semaphores
+      readOnly: true
+  - args:
+    - /opt/jindra/bin/env-to-json
+    - -prefix=registry-image
+    - -semaphore-file=/var/lock/jindra/steps-running
+    - /opt/resource/out
+    - /jindra/resources/registry-image
+    env:
+    - name: registry-image.params.image
+      value: ./image.tar
+    - name: registry-image.source.debug
+      value: "true"
+    - name: registry-image.source.repository
+      value: kesselborntests/jindratest
+    - name: registry-image.source.tag
+      value: "42"
+    - name: registry-image.source.password
+      valueFrom:
+        secretKeyRef:
+          key: password
+          name: dockerhub
+    - name: registry-image.source.username
+      valueFrom:
+        secretKeyRef:
+          key: username
+          name: dockerhub
+    - name: registry-image.params.image
+      value: ./image.tar
+    image: concourse/registry-image-resource
+    name: jindra-resource-out-registry-image
+    resources: {}
+    volumeMounts:
+    - mountPath: /jindra/resources/registry-image
+      name: jindra-resource-registry-image
+    - mountPath: /opt/jindra/bin
+      name: jindra-tools
+      readOnly: true
+    - mountPath: /var/lock/jindra
+      name: jindra-semaphores
+      readOnly: true
+  initContainers:
+  - command:
+    - sh
+    - -xc
+    - |-
+      cp /jindra/contrib/* /opt/jindra/bin
+
+      # create a few semaphores which can be used to block outputs
+      # until main steps are finished
+      touch /var/lock/jindra/steps-running
+      touch /var/lock/jindra/outputs-running
+      touch /var/lock/jindra/container-build-docker-image
+      touch /var/lock/jindra/container-jindra-watcher
+      touch /var/lock/jindra/container-jindra-debug-container
+      touch /var/lock/jindra/container-jindra-resource-out-transit
+      touch /var/lock/jindra/container-jindra-resource-out-registry-image
+    image: jindra/tools
+    imagePullPolicy: Always
+    name: get-jindra-tools
+    resources: {}
+    volumeMounts:
+    - mountPath: /var/lock/jindra
+      name: jindra-semaphores
+    - mountPath: /opt/jindra/bin
+      name: jindra-tools
+  - command:
+    - /opt/jindra/bin/env-to-json
+    - -prefix=transit
+    - -semaphore-file=/var/lock/jindra/setting-up-pod
+    - /opt/resource/in
+    - /jindra/resources/transit
+    env:
+    - name: transit.source.server
+      value: ${MY_IP}
+    - name: transit.source.base_dir
+      value: /tmp
+    - name: transit.source.user
+      value: root
+    - name: transit.source.disable_version_path
+      value: "true"
+    - name: transit.version
+      value: '{"ref":"tmp"}'
+    - name: transit.source.private_key
+      valueFrom:
+        secretKeyRef:
+          key: priv
+          name: jindra.http-fs.42.rsync-keys
+    image: mrsixw/concourse-rsync-resource
+    name: jindra-resource-in-transit
+    resources: {}
+    volumeMounts:
+    - mountPath: /jindra/resources/transit
+      name: jindra-resource-transit
+    - mountPath: /opt/jindra/bin
+      name: jindra-tools
+      readOnly: true
+  restartPolicy: Never
+  volumes:
+  - emptyDir: {}
+    name: jindra-tools
+  - emptyDir: {}
+    name: jindra-semaphores
+  - emptyDir: {}
+    name: jindra-resource-transit
+  - emptyDir: {}
+    name: jindra-resource-registry-image
+  - name: jindra-rsync-ssh-keys
+    secret:
+      defaultMode: 256
+      items:
+      - key: priv
+        path: ./jindra
+      secretName: jindra.http-fs.42.rsync-keys
+status: {}

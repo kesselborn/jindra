@@ -19,16 +19,9 @@ func getExamplePipeline(t *testing.T) jindra.JindraPipeline {
 		t.Fatalf("error reading example pipeline file: %s: %s", examplePipeline, err)
 	}
 
-	// convert yaml to json as annotations are only for json in JindraPipeline
-	jsonData, err := yaml.YAMLToJSON(yamlData)
+	p, err := NewJindraPipeline(yamlData)
 	if err != nil {
-		t.Fatalf("cannot convert yaml to json data: %s", err)
-	}
-
-	var p jindra.JindraPipeline
-	err = json.Unmarshal(jsonData, &p)
-	if err != nil {
-		t.Fatalf("cannot unmarshal json data %s: %s", string(jsonData), err)
+		t.Fatalf("cannot convert yaml to jindra pipeline: %s", err)
 	}
 
 	return p
@@ -89,16 +82,7 @@ func TestBasicUnmarshalingTest(t *testing.T) {
 
 }
 
-func interface2yaml(x interface{}) string {
-	b, err := yaml.Marshal(x)
-	if err != nil {
-		return ""
-	}
-
-	return string(b)
-}
-
-func fileContents(file string) *core.Pod {
+func podFileContents(file string) *core.Pod {
 	content, err := ioutil.ReadFile(file)
 	if err != nil {
 		return nil
@@ -113,32 +97,43 @@ func fileContents(file string) *core.Pod {
 	return &data
 }
 
-func TestStageConfigs(t *testing.T) {
-	p := getExamplePipeline(t)
+func configMapFileContents(file string) *core.ConfigMap {
+	content, err := ioutil.ReadFile(file)
+	if err != nil {
+		return nil
+	}
 
-	configs, configsErr := pipelineConfigs(p, 42)
-	// configMap, configMapErr := pipelineRunConfigmap(p, 42)
+	jsonContent, err := yaml.YAMLToJSON(content)
+	if err != nil {
+		panic(err)
+	}
+
+	var data core.ConfigMap
+	err = json.Unmarshal(jsonContent, &data)
+	if err != nil {
+		panic(err)
+	}
+
+	return &data
+}
+
+func TestStageConfigs(t *testing.T) {
+	configs, configsErr := pipelineConfigs(getExamplePipeline(t), 42)
+	configMap, configMapErr := PipelineRunConfigMap(getExamplePipeline(t), 42)
 
 	for i, test := range []struct {
 		got         interface{}
 		expectation interface{}
 		desc        string
 	}{
-		{configsErr, nil, "should not error out"},
-		{len(configs), 5, "pipeline should have four configs"},
-		{configs[0]["01-build-go-binary.yaml"] != nil, true, "stage 01 config exists"},
-		{*configs[0]["01-build-go-binary.yaml"], *fileContents("../../playground/jindra.http-fs-42.01-build-go-binary.yaml"), "stage 01 should be correct"},
-
-		{configs[1]["02-build-docker-image.yaml"] != nil, true, "stage 02 config exists"},
-		{*configs[1]["02-build-docker-image.yaml"], *fileContents("../../playground/jindra.http-fs-42.02-build-docker-image.yaml"), "stage 02 should be correct"},
-
-		{configs[2]["03-on-success.yaml"] != nil, true, "on success config exists"},
-		{*configs[2]["03-on-success.yaml"], *fileContents("../../playground/jindra.http-fs-42.03-on-success.yaml"), "on success should be correct"},
-
-		{configs[3]["04-on-error.yaml"] != nil, true, "on error config exists"},
-		{*configs[3]["04-on-error.yaml"], *fileContents("../../playground/jindra.http-fs-42.04-on-error.yaml"), "on error should be correct"},
-
-		{configsErr, nil, "should not error out"},
+		{configsErr, nil, "configs creation should not error out"},
+		{len(configs), 4, "pipeline should have four configs"},
+		{configs["01-build-go-binary.yaml"], *podFileContents("../../playground/jindra.http-fs.42.01-build-go-binary.yaml"), "stage 01 should be correct"},
+		{configs["02-build-docker-image.yaml"], *podFileContents("../../playground/jindra.http-fs.42.02-build-docker-image.yaml"), "stage 02 should be correct"},
+		{configs["03-on-success.yaml"], *podFileContents("../../playground/jindra.http-fs.42.03-on-success.yaml"), "on success should be correct"},
+		{configs["04-on-error.yaml"], *podFileContents("../../playground/jindra.http-fs.42.04-on-error.yaml"), "on error should be correct"},
+		{configMapErr, nil, "configmap creation should not error out"},
+		{configMap, *configMapFileContents("../../playground/jindra.http-fs.42.stages.yaml"), "configmap should be correct"},
 	} {
 		if reflect.DeepEqual(test.expectation, test.got) {
 			t.Logf("\t%2d: %-80s %s", i, test.desc, ok())

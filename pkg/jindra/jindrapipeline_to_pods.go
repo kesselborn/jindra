@@ -1,17 +1,20 @@
 package jindra
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path"
 	"strings"
 
+	"github.com/ghodss/yaml"
 	jindra "github.com/kesselborn/jindra/pkg/apis/jindra/v1alpha1"
 	core "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// PipelineRunConfigs keeps pod configurations for the pipeline run
-type PipelineRunConfigs []map[string]*core.Pod
+// pipelineRunConfigs keeps pod configurations for the pipeline run
+type pipelineRunConfigs map[string]core.Pod
 
 var nodeAffinity = core.NodeAffinity{
 	PreferredDuringSchedulingIgnoredDuringExecution: []core.PreferredSchedulingTerm{
@@ -252,14 +255,16 @@ func jindraContainers(p core.Pod, stageName string, waitFor string, ppl jindra.J
 	return containers
 }
 
+func secretName(name string, buildNo int) string {
+	return fmt.Sprintf("jindra.%s.%02d.rsync-keys", name, buildNo)
+}
+
 func getResource(ppl jindra.JindraPipeline, name string) (core.Container, error) {
 	for _, c := range ppl.Spec.Resources.Containers {
 		if c.Name == name {
 			return c, nil
 		}
 	}
-
-	secretName := fmt.Sprintf("jindra.%s-%02d.rsync-keys", ppl.ObjectMeta.Name, ppl.Status.BuildNo)
 
 	if name == "transit" {
 		return core.Container{
@@ -274,7 +279,7 @@ func getResource(ppl jindra.JindraPipeline, name string) (core.Container, error)
 				{Name: "transit.source.private_key", ValueFrom: &core.EnvVarSource{
 					SecretKeyRef: &core.SecretKeySelector{
 						Key:                  "priv",
-						LocalObjectReference: core.LocalObjectReference{Name: secretName},
+						LocalObjectReference: core.LocalObjectReference{Name: secretName(ppl.ObjectMeta.Name, ppl.Status.BuildNo)},
 					},
 				}},
 			},
@@ -375,8 +380,77 @@ func annotationToEnv(annotation string) map[string][]core.EnvVar {
 	return e
 }
 
-func pipelineConfigs(ppl jindra.JindraPipeline, buildNo int) (PipelineRunConfigs, error) {
-	config := PipelineRunConfigs{}
+func interface2yaml(dataStruct interface{}) string {
+	// convert to json-string first in order to respect the `json:"omitempty"` tags in yaml
+	jsonTxt, err := json.Marshal(dataStruct)
+	if err != nil {
+		// TODO: use logger
+		fmt.Fprintf(os.Stderr, "error marshalling struct: %s\n", err)
+		return ""
+	}
+
+	var slimDataStruct interface{} // does not containe empty properties which are marked as 'omitempty'
+
+	err = json.Unmarshal(jsonTxt, &slimDataStruct)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error unmarshalling json text: %s\n", err)
+		return ""
+	}
+
+	yamlTxt, err := yaml.Marshal(slimDataStruct)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error marshalling slim data struct: %s\n", err)
+		return ""
+	}
+
+	return string(yamlTxt)
+}
+
+func PipelineRunConfigMap(ppl jindra.JindraPipeline, buildNo int) (core.ConfigMap, error) {
+	configs, err := pipelineConfigs(ppl, buildNo)
+	if err != nil {
+		return core.ConfigMap{}, err
+	}
+
+	cmData := map[string]string{}
+	for key, pod := range configs {
+		cmData[key] = interface2yaml(pod)
+	}
+
+	return core.ConfigMap{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConfigMap",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: fmt.Sprintf("jindra.%s.%d.stages", ppl.Name, buildNo),
+			Labels: map[string]string{
+				"jindra.io/pipeline": ppl.Name,
+				"jindra.io/run":      fmt.Sprintf("%d", buildNo),
+			},
+		},
+		Data: cmData,
+	}, nil
+}
+
+func NewJindraPipeline(yamlData []byte) (jindra.JindraPipeline, error) {
+	// convert yaml to json as annotations are only for json in JindraPipeline
+	jsonData, err := yaml.YAMLToJSON(yamlData)
+	if err != nil {
+		return jindra.JindraPipeline{}, fmt.Errorf("cannot convert yaml to json data: %s", err)
+	}
+
+	var p jindra.JindraPipeline
+	err = json.Unmarshal(jsonData, &p)
+	if err != nil {
+		return jindra.JindraPipeline{}, fmt.Errorf("cannot unmarshal json data %s: %s", string(jsonData), err)
+	}
+
+	return p, nil
+}
+
+func pipelineConfigs(ppl jindra.JindraPipeline, buildNo int) (pipelineRunConfigs, error) {
+	config := pipelineRunConfigs{}
 	ppl.Status.BuildNo = buildNo
 
 	for i, stage := range append(ppl.Spec.Stages, ppl.Spec.OnSuccess, ppl.Spec.OnError, ppl.Spec.Final) {
@@ -400,7 +474,7 @@ func pipelineConfigs(ppl jindra.JindraPipeline, buildNo int) (PipelineRunConfigs
 			Name: "jindra-rsync-ssh-keys",
 			VolumeSource: core.VolumeSource{
 				Secret: &core.SecretVolumeSource{
-					SecretName:  fmt.Sprintf("jindra.%s-%02d.rsync-keys", ppl.ObjectMeta.Name, buildNo),
+					SecretName:  secretName(ppl.ObjectMeta.Name, ppl.Status.BuildNo),
 					DefaultMode: &defaultMode,
 					Items: []core.KeyToPath{
 						core.KeyToPath{Key: "priv", Path: "./jindra"},
@@ -409,7 +483,7 @@ func pipelineConfigs(ppl jindra.JindraPipeline, buildNo int) (PipelineRunConfigs
 			},
 		})
 
-		config = append(config, map[string]*core.Pod{stageName + ".yaml": stage.DeepCopy()})
+		config[stageName+".yaml"] = stage
 	}
 
 	return config, nil

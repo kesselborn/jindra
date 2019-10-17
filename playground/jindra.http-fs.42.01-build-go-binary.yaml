@@ -1,0 +1,158 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    jindra.io/inputs: git
+    jindra.io/outputs: transit
+    jindra.io/wait-for: build-go-binary
+  creationTimestamp: null
+  labels:
+    jindra.io/uid: ${MY_UID}
+  name: ${MY_NAME}.01-build-go-binary
+spec:
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - preference:
+          matchExpressions:
+          - key: kubernetes.io/hostname
+            operator: In
+            values:
+            - ${MY_NODE_NAME}
+        weight: 1
+  containers:
+  - command:
+    - sh
+    - -c
+    - |
+      set -xe # fail if any of the command fails
+      go build -x -o /jindra/resources/transit/http-fs-linux .
+      cp Dockerfile.hello-world /jindra/resources/transit/Dockerfile
+    image: golang
+    name: build-go-binary
+    resources: {}
+    volumeMounts:
+    - mountPath: /jindra/resources/git
+      name: jindra-resource-git
+    - mountPath: /jindra/resources/transit
+      name: jindra-resource-transit
+    workingDir: /jindra/resources/git
+  - args:
+    - sh
+    - -c
+    - |
+      printf "waiting for steps to finish "
+      while ! wget -qO- ${MY_IP}:8080/pod/${MY_NAME}.01-build-go-binary?containers=build-go-binary|grep Completed &>/dev/null
+      do
+        printf "."
+        sleep 3
+      done
+      echo
+      rm /var/lock/jindra/steps-running
+    env:
+    - name: JOB_IP
+      value: ${MY_IP}
+    image: alpine
+    name: jindra-watcher
+    resources: {}
+    volumeMounts:
+    - mountPath: /var/lock/jindra
+      name: jindra-semaphores
+  - args:
+    - /opt/jindra/bin/env-to-json
+    - -prefix=transit
+    - -semaphore-file=/var/lock/jindra/steps-running
+    - /opt/resource/out
+    - /jindra/resources/transit
+    env:
+    - name: transit.source.server
+      value: ${MY_IP}
+    - name: transit.source.base_dir
+      value: /tmp
+    - name: transit.source.user
+      value: root
+    - name: transit.source.disable_version_path
+      value: "true"
+    - name: transit.version
+      value: '{"ref":"tmp"}'
+    - name: transit.source.private_key
+      valueFrom:
+        secretKeyRef:
+          key: priv
+          name: jindra.http-fs.42.rsync-keys
+    image: mrsixw/concourse-rsync-resource
+    name: jindra-resource-out-transit
+    resources: {}
+    volumeMounts:
+    - mountPath: /jindra/resources/transit
+      name: jindra-resource-transit
+    - mountPath: /opt/jindra/bin
+      name: jindra-tools
+      readOnly: true
+    - mountPath: /var/lock/jindra
+      name: jindra-semaphores
+      readOnly: true
+  initContainers:
+  - command:
+    - sh
+    - -xc
+    - |-
+      cp /jindra/contrib/* /opt/jindra/bin
+
+      # create a few semaphores which can be used to block outputs
+      # until main steps are finished
+      touch /var/lock/jindra/steps-running
+      touch /var/lock/jindra/outputs-running
+      touch /var/lock/jindra/container-build-go-binary
+      touch /var/lock/jindra/container-jindra-watcher
+      touch /var/lock/jindra/container-jindra-resource-out-transit
+    image: jindra/tools
+    imagePullPolicy: Always
+    name: get-jindra-tools
+    resources: {}
+    volumeMounts:
+    - mountPath: /var/lock/jindra
+      name: jindra-semaphores
+    - mountPath: /opt/jindra/bin
+      name: jindra-tools
+  - command:
+    - /opt/jindra/bin/env-to-json
+    - -prefix=git
+    - -semaphore-file=/var/lock/jindra/setting-up-pod
+    - /opt/resource/in
+    - /jindra/resources/git
+    env:
+    - name: git.source.uri
+      value: git@github.com:kesselborn/http-fs
+    - name: git.source.private_key
+      valueFrom:
+        secretKeyRef:
+          key: key
+          name: deploy-key
+    image: concourse/git-resource
+    name: jindra-resource-in-git
+    resources: {}
+    volumeMounts:
+    - mountPath: /jindra/resources/git
+      name: jindra-resource-git
+    - mountPath: /opt/jindra/bin
+      name: jindra-tools
+      readOnly: true
+  restartPolicy: Never
+  volumes:
+  - emptyDir: {}
+    name: jindra-tools
+  - emptyDir: {}
+    name: jindra-semaphores
+  - emptyDir: {}
+    name: jindra-resource-git
+  - emptyDir: {}
+    name: jindra-resource-transit
+  - name: jindra-rsync-ssh-keys
+    secret:
+      defaultMode: 256
+      items:
+      - key: priv
+        path: ./jindra
+      secretName: jindra.http-fs.42.rsync-keys
+status: {}

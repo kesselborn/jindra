@@ -90,7 +90,7 @@ metadata:
 EOF
 
 kubectl patch pod ${MY_NAME} --patch "$(cat /tmp/patch.yaml)"
-kubectl patch job jindra.${JINDRA_PIPELINE_NAME}-${JINDRA_PIPELINE_RUN_NO} --patch "$(cat /tmp/patch.yaml)"
+kubectl patch job jindra.${JINDRA_PIPELINE_NAME}.${JINDRA_PIPELINE_RUN_NO} --patch "$(cat /tmp/patch.yaml)"
 
 cat<<EOF >>/tmp/patch.yaml
   ownerReferences:
@@ -102,8 +102,8 @@ cat<<EOF >>/tmp/patch.yaml
 EOF
 
 (set -x;
-kubectl patch secret jindra.${JINDRA_PIPELINE_NAME}-${JINDRA_PIPELINE_RUN_NO}.rsync-keys --patch "$(cat /tmp/patch.yaml)"
-kubectl patch configmap jindra.${JINDRA_PIPELINE_NAME}-${JINDRA_PIPELINE_RUN_NO}.stages --patch "$(cat /tmp/patch.yaml)"
+kubectl patch secret jindra.${JINDRA_PIPELINE_NAME}.${JINDRA_PIPELINE_RUN_NO}.rsync-keys --patch "$(cat /tmp/patch.yaml)"
+kubectl patch configmap jindra.${JINDRA_PIPELINE_NAME}.${JINDRA_PIPELINE_RUN_NO}.stages --patch "$(cat /tmp/patch.yaml)"
 )
 
 for f in $(ls /jindra/stages/*.yaml|grep -v "[0-9][0-9]-on-error.yaml$"|grep -v "[0-9][0-9]-on-success.yaml$")

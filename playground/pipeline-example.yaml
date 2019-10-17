@@ -103,12 +103,12 @@ spec:
           slack.params.attachments=[{"color":"#ff0000","text":"fuck sake"}]
 
 
-  final:
-    metadata:
-      name: final
-      annotations:
-        jindra.io/outputs: slack
-        jindra.io/outputs-envs: |
-          slack.params.text=Finalizer
-          slack.params.icon_emoji=:angry:
-          slack.params.attachments=[{"color":"#ff0000","pretext":"hohoho"}]
+#  final:
+#    metadata:
+#      name: final
+#      annotations:
+#        jindra.io/outputs: slack
+#        jindra.io/outputs-envs: |
+#          slack.params.text=Finalizer
+#          slack.params.icon_emoji=:angry:
+#          slack.params.attachments=[{"color":"#ff0000","pretext":"hohoho"}]
