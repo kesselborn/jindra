@@ -59,8 +59,8 @@ spec:
     - mountPath: /var/lock/jindra
       name: jindra-semaphores
   - args:
-    - /opt/jindra/bin/env-to-json
-    - -prefix=transit
+    - /opt/jindra/bin/crij
+    - -env-prefix=transit
     - -semaphore-file=/var/lock/jindra/steps-running
     - /opt/resource/out
     - /jindra/resources/transit
@@ -116,8 +116,8 @@ spec:
     - mountPath: /opt/jindra/bin
       name: jindra-tools
   - command:
-    - /opt/jindra/bin/env-to-json
-    - -prefix=git
+    - /opt/jindra/bin/crij
+    - -env-prefix=git
     - -semaphore-file=/var/lock/jindra/setting-up-pod
     - /opt/resource/in
     - /jindra/resources/git

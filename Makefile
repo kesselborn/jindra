@@ -1,9 +1,13 @@
 DOCKER_IMAGE=jindra/jindra
 GO_FILES=${shell find . -name "*.go"}
 
-build: build/_output/bin/jindra
+all: crij build/_output/bin/jindra
+
+crij: pkg/jindra/tools/crij/cmd/crij/*.go pkg/jindra/tools/crij/*.go
+	cd ./pkg/jindra/tools/crij && go build ./cmd/crij && cp crij $(CURDIR)/crij
 
 test:
+	cd pkg/jindra/tools/crij && go test -v 
 	cd pkg/jindra && go test -timeout 30s -v || { test $$? = 1 && code -d /tmp/expected /tmp/got; }
 
 local: docker-image
@@ -33,4 +37,8 @@ docker-image: build/_output/bin/jindra
 	docker push jindra/jindra
 	sed -i "" 's|REPLACE_IMAGE|${DOCKER_IMAGE}|g' deploy/operator.yaml
 	touch $@
+
+tools-image:
+	docker build -t jindra/tools:latest -f Dockerfile.jindra-tools .
+	docker push jindra/tools:latest
 

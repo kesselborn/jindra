@@ -1,4 +1,4 @@
-package envToJson
+package crij
 
 import (
 	"encoding/json"
@@ -7,6 +7,12 @@ import (
 	"strings"
 )
 
+// EnvToJSON converts env variables to json structures:
+// foo.bar=baz
+// foo.baz=baz
+//
+// results in:
+// {"foo": {"bar": "baz", "baz": "baz" }
 func EnvToJSON(prefix string) (string, error) {
 	envVars := os.Environ()
 	jsonStructure := map[string]interface{}{}

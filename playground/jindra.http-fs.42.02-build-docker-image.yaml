@@ -83,8 +83,8 @@ spec:
     - mountPath: /jindra/resources/registry-image
       name: jindra-resource-registry-image
   - args:
-    - /opt/jindra/bin/env-to-json
-    - -prefix=transit
+    - /opt/jindra/bin/crij
+    - -env-prefix=transit
     - -semaphore-file=/var/lock/jindra/steps-running
     - /opt/resource/out
     - /jindra/resources/transit
@@ -117,8 +117,8 @@ spec:
       name: jindra-semaphores
       readOnly: true
   - args:
-    - /opt/jindra/bin/env-to-json
-    - -prefix=registry-image
+    - /opt/jindra/bin/crij
+    - -env-prefix=registry-image
     - -semaphore-file=/var/lock/jindra/steps-running
     - /opt/resource/out
     - /jindra/resources/registry-image
@@ -181,8 +181,8 @@ spec:
     - mountPath: /opt/jindra/bin
       name: jindra-tools
   - command:
-    - /opt/jindra/bin/env-to-json
-    - -prefix=transit
+    - /opt/jindra/bin/crij
+    - -env-prefix=transit
     - -semaphore-file=/var/lock/jindra/setting-up-pod
     - /opt/resource/in
     - /jindra/resources/transit

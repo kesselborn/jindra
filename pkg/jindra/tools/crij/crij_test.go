@@ -1,4 +1,4 @@
-package envToJson
+package crij
 
 import (
 	"fmt"

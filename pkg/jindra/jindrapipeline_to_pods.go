@@ -249,8 +249,8 @@ func jindraContainers(p core.Pod, stageName string, waitFor string, ppl jindra.J
 		}...)
 		c.Name = outResourceContainerNamePrefix + c.Name
 		c.Args = []string{
-			path.Join(toolsPrefixPath, "env-to-json"),
-			"-prefix=" + outName,
+			path.Join(toolsPrefixPath, "crij"),
+			"-env-prefix=" + outName,
 			"-semaphore-file=" + path.Join(semaphoresPrefixPath, "steps-running"),
 			"/opt/resource/out",
 			path.Join(resourcesPrefixPath, outName),
@@ -354,8 +354,8 @@ func jindraInitContainers(p core.Pod, ppl jindra.JindraPipeline) []core.Containe
 		}...)
 		c.Name = inResourceContainerNamePrefix + c.Name
 		c.Command = []string{
-			path.Join(toolsPrefixPath, "env-to-json"),
-			"-prefix=" + inName,
+			path.Join(toolsPrefixPath, "crij"),
+			"-env-prefix=" + inName,
 			"-semaphore-file=" + path.Join(semaphoresPrefixPath, "setting-up-pod"),
 			"/opt/resource/in",
 			path.Join(resourcesPrefixPath, inName),

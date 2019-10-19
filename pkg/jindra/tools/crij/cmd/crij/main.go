@@ -9,7 +9,7 @@ import (
 	"os/exec"
 	"time"
 
-	envToJSON "github.com/kesselborn/jindra/env-to-json"
+	"github.com/kesselborn/jindra/pkg/jindra/tools/crij"
 )
 
 func callScript(json string, waitOnFail bool, args []string) {
@@ -41,13 +41,14 @@ func callScript(json string, waitOnFail bool, args []string) {
 }
 
 func main() {
-	prefix := flag.String("prefix", "", "env var prefix to include in conversion (must be set)")
+	prefix := flag.String("env-prefix", "", "only env vars with this prefix will be used -- prefix is separated by a '.' (i.e. prefix for env var 'git.source.url' would be git)")
 	waitOnFail := flag.Bool("wait-on-fail", false, "leave container live for 5 more minutes if the script fails (for debugging purposes)")
 	semaphoreFile := flag.String("semaphore-file", "", "file to watch ... program will start once this file DOES NOT EXIST")
 	debug := flag.Bool("debug", false, "print debugging info")
 	flag.Parse()
 
 	if *semaphoreFile == "" {
+		fmt.Println("crij -- concourse resource in jindra")
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
@@ -66,7 +67,7 @@ func main() {
 	}
 	fmt.Println(" done")
 
-	s, err := envToJSON.EnvToJSON(*prefix)
+	s, err := crij.EnvToJSON(*prefix)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error converting env to json: %s\n", err)
 		os.Exit(1)

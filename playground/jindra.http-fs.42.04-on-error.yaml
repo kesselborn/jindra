@@ -46,8 +46,8 @@ spec:
     - mountPath: /var/lock/jindra
       name: jindra-semaphores
   - args:
-    - /opt/jindra/bin/env-to-json
-    - -prefix=slack
+    - /opt/jindra/bin/crij
+    - -env-prefix=slack
     - -semaphore-file=/var/lock/jindra/steps-running
     - /opt/resource/out
     - /jindra/resources/slack
