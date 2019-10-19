@@ -44,6 +44,12 @@ docker-image: build/_output/bin/jindra
 	sed -i "" 's|REPLACE_IMAGE|${DOCKER_IMAGE}|g' deploy/operator.yaml
 	touch $@
 
+update-helper-images: tools-image rsync-image runner-image pod-watcher-image
+
+rsync-image:
+	docker build -t jindra/rsync-server:latest -f Dockerfile.rsync-server .
+	docker push jindra/rsync-server:latest
+
 tools-image:
 	docker build -t jindra/tools:latest -f Dockerfile.jindra-tools .
 	docker push jindra/tools:latest

@@ -16,9 +16,3 @@ deploy: update-stages
 secrets:
 	-kubectl -n jindra create secret generic deploy-key --from-file=key=jindra-deploy.key
 	kubectl -n jindra apply -f dockerhub-secret.yaml
-
-update-images: tools-image rsync-image runner-image pod-watcher-image
-
-rsync-image:
-	docker build -t jindra/rsync-server:latest -f Dockerfile.rsync-server .
-	docker push jindra/rsync-server:latest
