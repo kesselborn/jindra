@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
+	"path"
 	"reflect"
 	"testing"
 
@@ -12,8 +14,12 @@ import (
 	core "k8s.io/api/core/v1"
 )
 
+const (
+	fixtureDir = "../../playground"
+)
+
 func getExamplePipeline(t *testing.T) jindra.JindraPipeline {
-	examplePipeline := "../../playground/pipeline-example.yaml"
+	examplePipeline := path.Join(fixtureDir, "pipeline-example.yaml")
 	yamlData, err := ioutil.ReadFile(examplePipeline)
 	if err != nil {
 		t.Fatalf("error reading example pipeline file: %s: %s", examplePipeline, err)
@@ -36,6 +42,10 @@ func errMsg(t *testing.T, expected interface{}, got interface{}) string {
 	if err != nil {
 		t.Fatalf("error marshalling %#v: %s", gotString, err)
 	}
+
+	os.Remove("/tmp/got")
+	os.Remove("/tmp/expected")
+
 	err = ioutil.WriteFile("/tmp/got", gotString, 0644)
 	if err != nil {
 		t.Fatalf("error writing diff file /tmp/got: %s", err)
@@ -82,44 +92,78 @@ func TestBasicUnmarshalingTest(t *testing.T) {
 
 }
 
-func podFileContents(file string) *core.Pod {
+func jsonFromYamlFile(file string, t *testing.T) []byte {
 	content, err := ioutil.ReadFile(file)
 	if err != nil {
-		return nil
-	}
-
-	var data core.Pod
-	err = yaml.Unmarshal(content, &data)
-	if err != nil {
-		panic(err)
-	}
-
-	return &data
-}
-
-func configMapFileContents(file string) *core.ConfigMap {
-	content, err := ioutil.ReadFile(file)
-	if err != nil {
-		return nil
+		t.Fatalf("error reading file %s: %s", file, err)
 	}
 
 	jsonContent, err := yaml.YAMLToJSON(content)
 	if err != nil {
-		panic(err)
+		t.Fatalf("error yaml2json file %s: %s", file, err)
 	}
 
-	var data core.ConfigMap
-	err = json.Unmarshal(jsonContent, &data)
+	return jsonContent
+}
+
+func podFileContents(file string, t *testing.T) *core.Pod {
+	var data core.Pod
+
+	err := json.Unmarshal(jsonFromYamlFile(file, t), &data)
 	if err != nil {
-		panic(err)
+		t.Fatalf("error yaml unmarshaling file %s: %s", file, err)
 	}
 
 	return &data
 }
 
+func configMapFileContents(file string, t *testing.T) *core.ConfigMap {
+	var data core.ConfigMap
+
+	err := json.Unmarshal(jsonFromYamlFile(file, t), &data)
+	if err != nil {
+		t.Fatalf("error json unmarshaling data from %s: %s", file, err)
+	}
+
+	return &data
+}
+
+func secretFileContents(file string, t *testing.T) *core.Secret {
+	var data core.Secret
+
+	err := json.Unmarshal(jsonFromYamlFile(file, t), &data)
+	if err != nil {
+		t.Fatalf("error json unmarshaling data from %s: %s", file, err)
+	}
+
+	return &data
+}
+
+func TestConfigMap(t *testing.T) {
+	configMap, _ := PipelineRunConfigMap(getExamplePipeline(t), 42)
+	expected := *configMapFileContents(path.Join(fixtureDir, "jindra.http-fs.42.stages.yaml"), t)
+
+	if !reflect.DeepEqual(expected, configMap) {
+		t.Fatalf("\t%2d: %-80s %s", 0, "config map should be correct", errMsg(t, expected, configMap))
+	}
+}
+
+func TestRsyncSSHSecret(t *testing.T) {
+	secret, _ := rsyncSSHSecret(getExamplePipeline(t), 42)
+	expected := *secretFileContents(path.Join(fixtureDir, "jindra.http-fs.42.rsync-keys.yaml"), t)
+
+	// we need to cheat a little bit here, as the keys themselves will always differ
+	// but we want to test the structure nevertheless
+	expected.Data["priv"] = secret.Data["priv"]
+	expected.Data["pub"] = secret.Data["pub"]
+
+	if !reflect.DeepEqual(expected, secret) {
+		t.Fatalf("\t%2d: %-80s %s", 0, "rsync ssh secret should be correct", errMsg(t, expected, secret))
+	}
+}
+
 func TestStageConfigs(t *testing.T) {
 	configs, configsErr := pipelineConfigs(getExamplePipeline(t), 42)
-	configMap, configMapErr := PipelineRunConfigMap(getExamplePipeline(t), 42)
 
 	for i, test := range []struct {
 		got         interface{}
@@ -128,12 +172,10 @@ func TestStageConfigs(t *testing.T) {
 	}{
 		{configsErr, nil, "configs creation should not error out"},
 		{len(configs), 4, "pipeline should have four configs"},
-		{configs["01-build-go-binary.yaml"], *podFileContents("../../playground/jindra.http-fs.42.01-build-go-binary.yaml"), "stage 01 should be correct"},
-		{configs["02-build-docker-image.yaml"], *podFileContents("../../playground/jindra.http-fs.42.02-build-docker-image.yaml"), "stage 02 should be correct"},
-		{configs["03-on-success.yaml"], *podFileContents("../../playground/jindra.http-fs.42.03-on-success.yaml"), "on success should be correct"},
-		{configs["04-on-error.yaml"], *podFileContents("../../playground/jindra.http-fs.42.04-on-error.yaml"), "on error should be correct"},
-		{configMapErr, nil, "configmap creation should not error out"},
-		{configMap, *configMapFileContents("../../playground/jindra.http-fs.42.stages.yaml"), "configmap should be correct"},
+		{configs["01-build-go-binary.yaml"], *podFileContents(path.Join(fixtureDir, "jindra.http-fs.42.01-build-go-binary.yaml"), t), "stage 01 should be correct"},
+		{configs["02-build-docker-image.yaml"], *podFileContents(path.Join(fixtureDir, "jindra.http-fs.42.02-build-docker-image.yaml"), t), "stage 02 should be correct"},
+		{configs["03-on-success.yaml"], *podFileContents(path.Join(fixtureDir, "jindra.http-fs.42.03-on-success.yaml"), t), "on success should be correct"},
+		{configs["04-on-error.yaml"], *podFileContents(path.Join(fixtureDir, "jindra.http-fs.42.04-on-error.yaml"), t), "on error should be correct"},
 	} {
 		if reflect.DeepEqual(test.expectation, test.got) {
 			t.Logf("\t%2d: %-80s %s", i, test.desc, ok())
@@ -146,9 +188,9 @@ func TestStageConfigs(t *testing.T) {
 
 func TestAnnotationEnvConverter(t *testing.T) {
 	annotation := `
-          slack.params.text=Job succeeded
-          slack.params.icon_emoji=":ghost:"
-          slack.params.attachments='[{"color":"#00ff00","text":"hihihi"}]'
+		  slack.params.text=Job succeeded
+		  slack.params.icon_emoji=":ghost:"
+		  slack.params.attachments='[{"color":"#00ff00","text":"hihihi"}]'
 		  rsync.params.foo="bar"
 		  rsync.source.url="rsync://foo.bar"
 	`
@@ -165,7 +207,3 @@ func TestAnnotationEnvConverter(t *testing.T) {
 		t.Fatalf("\t%2d: %-80s %s", 0, "converting env annotation failed", errMsg(t, expectedSlackEnv, e))
 	}
 }
-
-// TODO: test duplicate resource name
-// TODO: more complex case of wait-for
-// TODO: test naming of files if no onSuccess / onError exists

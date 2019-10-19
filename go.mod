@@ -5,6 +5,7 @@ require (
 	github.com/go-openapi/spec v0.19.0
 	github.com/operator-framework/operator-sdk v0.10.1-0.20191002141136-1a5772eb7185
 	github.com/spf13/pflag v1.0.3
+	golang.org/x/crypto v0.0.0-20190404164418-38d8ce5564a5
 	gopkg.in/yaml.v2 v2.2.2
 	gopkg.in/yaml.v3 v3.0.0-20191010095647-fc94e3f71652
 	k8s.io/api v0.0.0-20190612125737-db0771252981

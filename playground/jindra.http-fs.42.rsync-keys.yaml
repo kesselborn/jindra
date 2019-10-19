@@ -1,0 +1,12 @@
+apiVersion: v1
+data:
+  priv: amluZHJhCg==
+  pub: amluZHJhCg==
+kind: Secret
+metadata:
+  creationTimestamp: null
+  labels:
+    jindra.io/pipeline: http-fs
+    jindra.io/run: "42"
+  name: jindra.http-fs.42.rsync-keys
+type: Opaque

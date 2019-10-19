@@ -2,13 +2,19 @@ package jindra
 
 import (
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"os"
 	"path"
 	"strings"
 
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+
 	"github.com/ghodss/yaml"
 	jindra "github.com/kesselborn/jindra/pkg/apis/jindra/v1alpha1"
+	"golang.org/x/crypto/ssh"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -406,6 +412,54 @@ func interface2yaml(dataStruct interface{}) string {
 	return string(yamlTxt)
 }
 
+func generateSSHKeyPair() (priv []byte, pub []byte, errdx error) {
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return []byte{}, []byte{}, fmt.Errorf("error generating private key: %s", err)
+	}
+
+	priv = pem.EncodeToMemory(&pem.Block{
+		Type:    "RSA PRIVATE KEY",
+		Headers: nil,
+		Bytes:   x509.MarshalPKCS1PrivateKey(privateKey),
+	})
+
+	publicRsaKey, err := ssh.NewPublicKey(privateKey.Public())
+	if err != nil {
+		return []byte{}, []byte{}, fmt.Errorf("error generating public key: %s", err)
+	}
+
+	return priv, ssh.MarshalAuthorizedKey(publicRsaKey), nil
+}
+
+func rsyncSSHSecret(ppl jindra.JindraPipeline, buildNo int) (core.Secret, error) {
+	privateKey, publicKey, err := generateSSHKeyPair()
+	if err != nil {
+		return core.Secret{}, fmt.Errorf("error creating keypair: %s", err)
+	}
+
+	return core.Secret{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Secret",
+			APIVersion: "v1",
+		},
+		Data: map[string][]byte{
+			"priv": privateKey,
+			"pub":  publicKey,
+		},
+		Type: core.SecretType("Opaque"),
+		ObjectMeta: metav1.ObjectMeta{
+			Name: fmt.Sprintf("jindra.%s.%d.rsync-keys", ppl.Name, buildNo),
+			Labels: map[string]string{
+				"jindra.io/pipeline": ppl.Name,
+				"jindra.io/run":      fmt.Sprintf("%d", buildNo),
+			},
+		},
+	}, nil
+}
+
+// PipelineRunConfigMap creates the config map that the pipeline job uses
+// to create the stage pods
 func PipelineRunConfigMap(ppl jindra.JindraPipeline, buildNo int) (core.ConfigMap, error) {
 	configs, err := pipelineConfigs(ppl, buildNo)
 	if err != nil {
@@ -433,6 +487,7 @@ func PipelineRunConfigMap(ppl jindra.JindraPipeline, buildNo int) (core.ConfigMa
 	}, nil
 }
 
+// NewJindraPipeline creates a pipeline object from yaml source code
 func NewJindraPipeline(yamlData []byte) (jindra.JindraPipeline, error) {
 	// convert yaml to json as annotations are only for json in JindraPipeline
 	jsonData, err := yaml.YAMLToJSON(yamlData)
