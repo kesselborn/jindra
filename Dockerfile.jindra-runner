@@ -13,5 +13,5 @@ RUN apk add --update bash ca-certificates \
     && rm /var/cache/apk/*
 
 CMD /runner.sh
-COPY runner.sh /runner.sh
+COPY scripts/jindra-runner.sh /runner.sh
 

@@ -19,10 +19,6 @@ secrets:
 
 update-images: tools-image rsync-image runner-image pod-watcher-image
 
-runner-image:
-	docker build -t jindra/jindra-runner:latest -f Dockerfile.jindra-runner .
-	docker push jindra/jindra-runner:latest
-
 pod-watcher-image:
 	docker build -t jindra/pod-watcher:latest -f Dockerfile.k8s-pod-watcher .
 	docker push jindra/pod-watcher:latest

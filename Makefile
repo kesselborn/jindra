@@ -42,3 +42,7 @@ tools-image:
 	docker build -t jindra/tools:latest -f Dockerfile.jindra-tools .
 	docker push jindra/tools:latest
 
+runner-image:
+	docker build -t jindra/jindra-runner:latest -f Dockerfile.jindra-runner .
+	docker push jindra/jindra-runner:latest
+
