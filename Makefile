@@ -1,10 +1,16 @@
 DOCKER_IMAGE=jindra/jindra
-GO_FILES=${shell find . -name "*.go"}
+GO_FILES=${shell find pkg/controller -name "*.go"} ${shell find pkg/apis -name "*.go"}
 
-all: crij build/_output/bin/jindra
+all: k8s-pod-watcher kubectl-podstatus crij build/_output/bin/jindra
 
-crij: pkg/jindra/tools/crij/cmd/crij/*.go pkg/jindra/tools/crij/*.go
-	cd ./pkg/jindra/tools/crij && go build ./cmd/crij && cp crij $(CURDIR)/crij
+crij: pkg/jindra/tools/crij/*.go pkg/jindra/tools/crij/cmd/crij/*.go
+	cd ${shell dirname $<} && go build ./cmd/$@ && cp $@ $(CURDIR)/$@
+
+kubectl-podstatus: pkg/jindra/tools/k8spodstatus/*.go pkg/jindra/tools/k8spodstatus/cmd/kubectl-podstatus/*.go 
+	cd ${shell dirname $<} && go build ./cmd/$@ && cp $@ $(CURDIR)/$@
+
+k8s-pod-watcher: pkg/jindra/tools/k8spodstatus/*.go pkg/jindra/tools/k8spodstatus/cmd/k8s-pod-watcher/*.go 
+	cd ${shell dirname $<} && go build ./cmd/$@ && cp $@ $(CURDIR)/$@
 
 test:
 	cd pkg/jindra/tools/crij && go test -v 
@@ -46,3 +52,6 @@ runner-image:
 	docker build -t jindra/jindra-runner:latest -f Dockerfile.jindra-runner .
 	docker push jindra/jindra-runner:latest
 
+pod-watcher-image:
+	docker build -t jindra/pod-watcher:latest -f Dockerfile.k8s-pod-watcher .
+	docker push jindra/pod-watcher:latest

@@ -8,7 +8,7 @@ FROM golang as builder
 WORKDIR /src
 ENV CGO_ENABLED=0
 
-COPY k8sStatusWatcher /src
+COPY pkg/jindra/tools/k8spodstatus /src
 RUN find .
 RUN go get -v && go build -x ./... && go build ./cmd/k8s-pod-watcher
 

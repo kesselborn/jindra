@@ -1,4 +1,4 @@
-package k8sStatusWatcher
+package k8spodstatus
 
 import (
 	"encoding/json"
@@ -7,11 +7,11 @@ import (
 )
 
 const (
-	Terminated = "Terminated"
-	Running    = "Running"
-	Waiting    = "Waiting"
-	Completed  = "Completed"
-	Failed     = "Failed"
+	terminated = "Terminated"
+	running    = "Running"
+	waiting    = "Waiting"
+	completed  = "Completed"
+	failed     = "Failed"
 )
 
 type state struct {
@@ -38,49 +38,52 @@ type pod struct {
 	}
 }
 
+// PodInfoStatus represents the status of the current container
 type PodInfoStatus struct {
 	State   string
 	Success *bool `json:",omitempty"`
 }
 
+// PodInfo represents the status of a pods containers
 type PodInfo struct {
 	Name           string
 	Containers     map[string]PodInfoStatus
 	InitContainers map[string]PodInfoStatus
 }
 
+// State returns an aggregated State of the whole Pod
 func (pi PodInfo) State(containers ...string) string {
 	states := map[string]bool{}
 
 	fmt.Printf("containers: %#v\n", containers)
 	if len(containers) == 1 && containers[0] == "" {
-		return Completed
+		return completed
 	}
 
 	for _, c := range containers {
 		switch {
-		case pi.Containers[c].State == Running:
-			states[Running] = true
-		case pi.Containers[c].State == Completed:
-			states[Completed] = true
-		case pi.Containers[c].State == Waiting:
-			states[Waiting] = true
-		case pi.Containers[c].State == Terminated && *pi.Containers[c].Success:
-			states[Completed] = true
-		case pi.Containers[c].State == Terminated && !*pi.Containers[c].Success:
-			states[Failed] = true
+		case pi.Containers[c].State == running:
+			states[running] = true
+		case pi.Containers[c].State == completed:
+			states[completed] = true
+		case pi.Containers[c].State == waiting:
+			states[waiting] = true
+		case pi.Containers[c].State == terminated && *pi.Containers[c].Success:
+			states[completed] = true
+		case pi.Containers[c].State == terminated && !*pi.Containers[c].Success:
+			states[failed] = true
 		}
 	}
 
 	switch {
-	case states[Failed]:
-		return Failed
-	case states[Completed] && !states[Running]:
-		return Completed
-	case states[Waiting] && !states[Running]:
-		return Waiting
-	case states[Running]:
-		return Running
+	case states[failed]:
+		return failed
+	case states[completed] && !states[running]:
+		return completed
+	case states[waiting] && !states[running]:
+		return waiting
+	case states[running]:
+		return running
 	}
 
 	return "Unknown"
@@ -91,13 +94,13 @@ func state2PodInfoStatus(state state) PodInfoStatus {
 
 	switch {
 	case state.Running != nil:
-		podInfoStatus.State = Running
+		podInfoStatus.State = running
 	case state.Terminated != nil:
-		podInfoStatus.State = Terminated
+		podInfoStatus.State = terminated
 		podInfoStatus.Success = new(bool)
 		*podInfoStatus.Success = state.Terminated.ExitCode == 0
 	case state.Waiting != nil:
-		podInfoStatus.State = Waiting
+		podInfoStatus.State = waiting
 	default:
 		podInfoStatus.State = "Unknown"
 	}
@@ -105,15 +108,25 @@ func state2PodInfoStatus(state state) PodInfoStatus {
 	return podInfoStatus
 }
 
-func NewPodInfoFromJson(jsonString string) PodInfo {
+// NewPodInfo returns a PodInfo for ns/pod
+func NewPodInfo(ns string, pod string) (PodInfo, error) {
+	jsonString, err := PodJson(ns, pod)
+	if err != nil {
+		return PodInfo{}, fmt.Errorf("error retrieving pod json: %s", err)
+	}
+
+	return NewPodInfoFromJSON(jsonString), nil
+}
+
+func NewPodInfoFromJSON(jsonString string) PodInfo {
 	var pod pod
 	dec := json.NewDecoder(strings.NewReader(jsonString))
 	dec.Decode(&pod)
 
-	return NewPodInfo(pod)
+	return podInfoFromPod(pod)
 }
 
-func NewPodInfo(pod pod) PodInfo {
+func podInfoFromPod(pod pod) PodInfo {
 	podInfo := PodInfo{
 		Name:           pod.MetaData.Name,
 		Containers:     map[string]PodInfoStatus{},

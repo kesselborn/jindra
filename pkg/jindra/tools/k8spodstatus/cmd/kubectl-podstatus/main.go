@@ -7,7 +7,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/kesselborn/jindra/k8sStatusWatcher"
+	"github.com/kesselborn/jindra/pkg/jindra/tools/k8spodstatus"
 )
 
 func usage() {
@@ -33,9 +33,11 @@ func main() {
 		log.Fatal("missing pod name argument")
 	}
 
-	jsonString, err := k8sStatusWatcher.PodJson(*ns, pod)
+	podInfo, err := k8spodstatus.NewPodInfo(*ns, pod)
+	if err != nil {
+		fmt.Println("error:", err)
+	}
 
-	podInfo := k8sStatusWatcher.NewPodInfoFromJson(jsonString)
 	b, err := json.MarshalIndent(podInfo, "", "  ")
 	if err != nil {
 		fmt.Println("error:", err)

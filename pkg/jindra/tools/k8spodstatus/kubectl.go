@@ -1,4 +1,4 @@
-package k8sStatusWatcher
+package k8spodstatus
 
 import (
 	"fmt"
