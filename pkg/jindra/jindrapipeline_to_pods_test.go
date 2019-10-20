@@ -171,11 +171,12 @@ func TestStageConfigs(t *testing.T) {
 		desc        string
 	}{
 		{configsErr, nil, "configs creation should not error out"},
-		{len(configs), 4, "pipeline should have four configs"},
+		{len(configs), 5, "pipeline should have four configs"},
 		{configs["01-build-go-binary.yaml"], *podFileContents(path.Join(fixtureDir, "jindra.http-fs.42.01-build-go-binary.yaml"), t), "stage 01 should be correct"},
 		{configs["02-build-docker-image.yaml"], *podFileContents(path.Join(fixtureDir, "jindra.http-fs.42.02-build-docker-image.yaml"), t), "stage 02 should be correct"},
 		{configs["03-on-success.yaml"], *podFileContents(path.Join(fixtureDir, "jindra.http-fs.42.03-on-success.yaml"), t), "on success should be correct"},
 		{configs["04-on-error.yaml"], *podFileContents(path.Join(fixtureDir, "jindra.http-fs.42.04-on-error.yaml"), t), "on error should be correct"},
+		{configs["05-final.yaml"], *podFileContents(path.Join(fixtureDir, "jindra.http-fs.42.05-final.yaml"), t), "final should be correct"},
 	} {
 		if reflect.DeepEqual(test.expectation, test.got) {
 			t.Logf("\t%2d: %-80s %s", i, test.desc, ok())

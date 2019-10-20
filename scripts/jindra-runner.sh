@@ -62,6 +62,8 @@ block_until_finished() {
 
 run_pod() {
   local config_file=$1
+  test -e ${config_file} || return 0
+
   # TODO: look for a better way for this
   local name=$(eval "cat<<-EOF
 $(<${config_file})
@@ -106,7 +108,7 @@ kubectl patch secret jindra.${JINDRA_PIPELINE_NAME}.${JINDRA_PIPELINE_RUN_NO}.rs
 kubectl patch configmap jindra.${JINDRA_PIPELINE_NAME}.${JINDRA_PIPELINE_RUN_NO}.stages --patch "$(cat /tmp/patch.yaml)"
 )
 
-for f in $(ls /jindra/stages/*.yaml|grep -v "[0-9][0-9]-on-error.yaml$"|grep -v "[0-9][0-9]-on-success.yaml$")
+for f in $(ls /jindra/stages/*.yaml|grep -v "[0-9][0-9]-on-error.yaml$"|grep -v "[0-9][0-9]-on-success.yaml$"|grep -v "[0-9][0-9]-final.yaml$")
 do
   run_pod $f
   res=$?
@@ -122,6 +124,8 @@ then
 else
   run_pod /jindra/stages/[0-9][0-9]-on-error.yaml
 fi
+
+run_pod /jindra/stages/[0-9][0-9]-final.yaml
 
 rm /jindra/semaphores/stages-running
 exit ${res}
