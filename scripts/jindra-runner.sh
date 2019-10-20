@@ -32,8 +32,8 @@ function wait_for_containers() {
 
 block_until_finished() {
   local name=$1
-  local wait_for=$(kubectl get pod ${name} -ojson |jq -r '.metadata.annotations["jindra.io/wait-for"] // empty')
-  local outputs=$(kubectl get pod ${name} -ojson |jq -r '.metadata.annotations["jindra.io/outputs"] // empty')
+  local wait_for=$(kubectl get pod ${name} -ojson |jq -r ".metadata.annotations[\"${WAIT_FOR_ANNOTATION_KEY}\"] // empty")
+  local outputs=$(kubectl get pod ${name} -ojson |jq -r ".metadata.annotations[\"${OUT_RESOURCE_ANNOTATION_KEY}\"] // empty")
 
   local outputs_container_names=""
   for c in $(echo "${outputs}"|tr "," " ")
@@ -42,7 +42,7 @@ block_until_finished() {
     then
       outputs_container_names="${outputs_container_names},"
     fi
-    outputs_container_names="${outputs_container_names}jindra-resource-out-${c}"
+    outputs_container_names="${outputs_container_names}${OUT_RESOURCE_CONTAINER_NAME_PREFIX}${c}"
   done
 
   if wait_for_containers ${name} ${wait_for}
@@ -87,8 +87,8 @@ EOF
 cat<<EOF >/tmp/patch.yaml
 metadata:
   labels:
-    jindra.io/run: "${JINDRA_PIPELINE_RUN_NO}"
-    jindra.io/pipeline: "${JINDRA_PIPELINE_NAME}"
+    ${RUN_LABEL_KEY}: "${JINDRA_PIPELINE_RUN_NO}"
+    ${PIPELINE_LABEL_KEY}: "${JINDRA_PIPELINE_NAME}"
 EOF
 
 kubectl patch pod ${MY_NAME} --patch "$(cat /tmp/patch.yaml)"
@@ -104,8 +104,8 @@ cat<<EOF >>/tmp/patch.yaml
 EOF
 
 (set -x;
-kubectl patch secret jindra.${JINDRA_PIPELINE_NAME}.${JINDRA_PIPELINE_RUN_NO}.rsync-keys --patch "$(cat /tmp/patch.yaml)"
-kubectl patch configmap jindra.${JINDRA_PIPELINE_NAME}.${JINDRA_PIPELINE_RUN_NO}.stages --patch "$(cat /tmp/patch.yaml)"
+kubectl patch secret    $(printf "${RSYNC_KEY_NAME_FORMAT_STRING}"  "${JINDRA_PIPELINE_NAME}" ${JINDRA_PIPELINE_RUN_NO}) --patch "$(cat /tmp/patch.yaml)"
+kubectl patch configmap $(printf "${CONFIG_MAP_NAME_FORMAT_STRING}" "${JINDRA_PIPELINE_NAME}" ${JINDRA_PIPELINE_RUN_NO}) --patch "$(cat /tmp/patch.yaml)"
 )
 
 for f in $(ls /jindra/stages/*.yaml|grep -v "[0-9][0-9]-on-error.yaml$"|grep -v "[0-9][0-9]-on-success.yaml$"|grep -v "[0-9][0-9]-final.yaml$")

@@ -9,6 +9,9 @@ const (
 	inResourceEnvAnnotationKey  = "jindra.io/inputs-envs"
 	outResourceEnvAnnotationKey = "jindra.io/outputs-envs"
 
+	runLabelKey      = "jindra.io/run"
+	pipelineLabelKey = "jindra.io/pipeline"
+
 	resourcesPrefixPath  = "/jindra/resources"
 	semaphoresPrefixPath = "/var/lock/jindra"
 	toolsPrefixPath      = "/opt/jindra/bin"

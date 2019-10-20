@@ -57,6 +57,14 @@ spec:
           - { name: JINDRA_PIPELINE_NAME, value: "http-fs" }
           - { name: JINDRA_PIPELINE_RUN_NO, value: "42" }
 
+          - { name: WAIT_FOR_ANNOTATION_KEY, value: "jindra.io/wait-for" }
+          - { name: OUT_RESOURCE_ANNOTATION_KEY, value: "jindra.io/outputs" }
+          - { name: OUT_RESOURCE_CONTAINER_NAME_PREFIX, value: "jindra-resource-out-" }
+          - { name: RUN_LABEL_KEY, value: "jindra.io/run" }
+          - { name: PIPELINE_LABEL_KEY, value: "jindra.io/pipeline" }
+          - { name: RSYNC_KEY_NAME_FORMAT_STRING, value: "jindra.%s.%d.rsync-keys"}
+          - { name: CONFIG_MAP_NAME_FORMAT_STRING, value: "jindra.%s.%d.stages"}
+
         volumeMounts:
         - mountPath: /jindra/stages # mount stage pod yamls
           name: stages
