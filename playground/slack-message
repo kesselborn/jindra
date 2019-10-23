@@ -1,0 +1,70 @@
+set -x
+REPO_NAME=
+REPO_URL=
+COMMIT=${BUILD_VCS_NUMBER}
+SHORT_COMMIT=${COMMIT:0:7}
+
+BUILD_ID=
+BUILD_NO=
+
+USER=
+AVATAR= # url to image
+
+if [ "$BUILD_STATUS" = "SUCCESS" ]
+then
+  MSG="Build #${BUILD_NO} of *${REPO_NAME}* successful"
+  USERNAME="🟢 happy ${USER}"
+else
+  MSG="Build #${BUILD_NO} of *${REPO_NAME}* failed"
+  USERNAME="🔴 sad ${USER}"
+fi
+
+SLACK_POST_DATA="$(cat<<EOF
+{
+  "username": "${USERNAME}",
+  "as_user": false,
+  "icon_url": "${AVATAR}",
+  "text": "${MSG}",
+  "blocks": [
+    {
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": "${MSG}"
+      }
+    },
+    {
+      "type": "divider"
+    },
+    {
+      "type": "section",
+      "fields": [
+        {
+          "type": "mrkdwn",
+          "text": "*Author:*\n<https://github.com/${USER}|${USER}>"
+        },
+        {
+          "type": "mrkdwn",
+          "text": "*Repo:*\n<${REPO_URL}|${REPO_NAME}>"
+        },
+        {
+          "type": "mrkdwn",
+          "text": "*Commit:*\n<${REPO_URL}/commit/${COMMIT}|${SHORT_COMMIT}>"
+        },
+        {
+          "type": "mrkdwn",
+          "text": "*TeamCity-Logs:*\n<${TC_BASE}${BUILD_ID}|Build #${BUILD_NO} logs>"
+        }
+      ]
+    },
+    {
+      "type": "divider"
+    }
+  ]
+}
+EOF
+)"
+
+set +x
+
+curl -s -X POST -H 'Content-type: application/json' --data "${SLACK_POST_DATA}" ${SLACK_WEBHOOK:?error: SLACK_WEBHOOK env variable is not set}
