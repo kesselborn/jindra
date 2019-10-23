@@ -13,7 +13,7 @@ deploy: update-stages
 	-kubectl -n jindra delete job jindra.http-fs.42
 	kubectl -n jindra apply -f jindra-runner-permissions.yaml
 	kubectl -n jindra apply -f jindra.http-fs.42.yaml
-	watch kubectl -n jindra get pods
+	watch kubectl -n jindra get pods,jobs
 
 secrets:
 	-kubectl -n jindra create secret generic deploy-key --from-file=key=jindra-deploy.key

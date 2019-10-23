@@ -11,6 +11,7 @@ import (
 
 	"github.com/ghodss/yaml"
 	jindra "github.com/kesselborn/jindra/pkg/apis/jindra/v1alpha1"
+	batch "k8s.io/api/batch/v1"
 	core "k8s.io/api/core/v1"
 )
 
@@ -137,6 +138,29 @@ func secretFileContents(file string, t *testing.T) *core.Secret {
 	}
 
 	return &data
+}
+
+func jobFileContents(file string, t *testing.T) *batch.Job {
+	var data batch.Job
+
+	fmt.Fprintf(os.Stderr, "%s", string(jsonFromYamlFile(file, t)))
+
+	err := json.Unmarshal(jsonFromYamlFile(file, t), &data)
+	if err != nil {
+		t.Fatalf("error json unmarshaling data from %s: %s", file, err)
+	}
+
+	fmt.Fprintf(os.Stderr, "%#v", data)
+	return &data
+}
+
+func TxestJob(t *testing.T) {
+	job, _ := PipelineRunJob(getExamplePipeline(t), 42)
+	expected := *jobFileContents(path.Join(fixtureDir, "jindra.http-fs.42.yaml"), t)
+
+	if !reflect.DeepEqual(expected, job) {
+		t.Fatalf("\t%2d: %-80s %s", 0, "job should be correct", errMsg(t, expected, job))
+	}
 }
 
 func TestConfigMap(t *testing.T) {

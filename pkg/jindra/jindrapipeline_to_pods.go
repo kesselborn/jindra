@@ -15,6 +15,7 @@ import (
 	"github.com/ghodss/yaml"
 	jindra "github.com/kesselborn/jindra/pkg/apis/jindra/v1alpha1"
 	"golang.org/x/crypto/ssh"
+	batch "k8s.io/api/batch/v1"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -107,7 +108,7 @@ func getWaitFor(p core.Pod) []string {
 	return waitFor
 }
 
-func setDefaults(p *core.Pod) {
+func setDefaults(p *core.Pod, buildNo int) {
 	if p.Kind == "" {
 		p.Kind = "Pod"
 	}
@@ -130,7 +131,6 @@ func setDefaults(p *core.Pod) {
 	for i, c := range p.Spec.Containers {
 		p.Spec.Containers[i].VolumeMounts = append(p.Spec.Containers[i].VolumeMounts, getVolumeMounts(c, getResourceNames(*p))...)
 	}
-
 }
 
 func getVolumeMounts(c core.Container, resources []string) []core.VolumeMount {
@@ -261,10 +261,6 @@ func jindraContainers(p core.Pod, stageName string, waitFor string, ppl jindra.J
 	return containers
 }
 
-func secretName(name string, buildNo int) string {
-	return fmt.Sprintf("jindra.%s.%02d.rsync-keys", name, buildNo)
-}
-
 func getResource(ppl jindra.JindraPipeline, name string) (core.Container, error) {
 	for _, c := range ppl.Spec.Resources.Containers {
 		if c.Name == name {
@@ -285,7 +281,7 @@ func getResource(ppl jindra.JindraPipeline, name string) (core.Container, error)
 				{Name: "transit.source.private_key", ValueFrom: &core.EnvVarSource{
 					SecretKeyRef: &core.SecretKeySelector{
 						Key:                  "priv",
-						LocalObjectReference: core.LocalObjectReference{Name: secretName(ppl.ObjectMeta.Name, ppl.Status.BuildNo)},
+						LocalObjectReference: core.LocalObjectReference{Name: fmt.Sprintf(rsyncSecretFormatString, ppl.Name, ppl.Status.BuildNo)},
 					},
 				}},
 			},
@@ -449,11 +445,28 @@ func rsyncSSHSecret(ppl jindra.JindraPipeline, buildNo int) (core.Secret, error)
 		},
 		Type: core.SecretType("Opaque"),
 		ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("jindra.%s.%d.rsync-keys", ppl.Name, buildNo),
-			Labels: map[string]string{
-				"jindra.io/pipeline": ppl.Name,
-				"jindra.io/run":      fmt.Sprintf("%d", buildNo),
-			},
+			Name:   fmt.Sprintf(rsyncSecretFormatString, ppl.Name, buildNo),
+			Labels: defaultLabels(ppl.Name, buildNo),
+		},
+	}, nil
+}
+
+func defaultLabels(name string, buildNo int) map[string]string {
+	return map[string]string{
+		"jindra.io/pipeline": name,
+		"jindra.io/run":      fmt.Sprintf("%d", buildNo),
+	}
+}
+
+// PipelineRunJob creates the job that runs the pipeline
+func PipelineRunJob(ppl jindra.JindraPipeline, buildNo int) (batch.Job, error) {
+	return batch.Job{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "batch/v1",
+			Kind:       "Job",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Labels: defaultLabels(ppl.Name, buildNo),
 		},
 	}, nil
 }
@@ -477,11 +490,8 @@ func PipelineRunConfigMap(ppl jindra.JindraPipeline, buildNo int) (core.ConfigMa
 			APIVersion: "v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("jindra.%s.%d.stages", ppl.Name, buildNo),
-			Labels: map[string]string{
-				"jindra.io/pipeline": ppl.Name,
-				"jindra.io/run":      fmt.Sprintf("%d", buildNo),
-			},
+			Name:   fmt.Sprintf(configMapFormatString, ppl.Name, buildNo),
+			Labels: defaultLabels(ppl.Name, buildNo),
 		},
 		Data: cmData,
 	}, nil
@@ -512,7 +522,11 @@ func pipelineConfigs(ppl jindra.JindraPipeline, buildNo int) (pipelineRunConfigs
 		if stage.Name == "" && stage.Annotations == nil {
 			continue
 		}
-		setDefaults(&stage)
+		setDefaults(&stage, buildNo)
+		for k, v := range defaultLabels(ppl.Name, buildNo) {
+			stage.Labels[k] = v
+		}
+
 		stage.Annotations[waitForAnnotationKey] = strings.Join(getWaitFor(stage), ",")
 
 		stageName := fmt.Sprintf("%02d-%s", i+1, stage.GetName())
@@ -529,7 +543,7 @@ func pipelineConfigs(ppl jindra.JindraPipeline, buildNo int) (pipelineRunConfigs
 			Name: "jindra-rsync-ssh-keys",
 			VolumeSource: core.VolumeSource{
 				Secret: &core.SecretVolumeSource{
-					SecretName:  secretName(ppl.ObjectMeta.Name, ppl.Status.BuildNo),
+					SecretName:  fmt.Sprintf(rsyncSecretFormatString, ppl.Name, ppl.Status.BuildNo),
 					DefaultMode: &defaultMode,
 					Items: []core.KeyToPath{
 						core.KeyToPath{Key: "priv", Path: "./jindra"},

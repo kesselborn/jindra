@@ -10,6 +10,8 @@ metadata:
     jindra.io/wait-for: ""
   creationTimestamp: null
   labels:
+    jindra.io/pipeline: http-fs
+    jindra.io/run: "42"
     jindra.io/uid: ${MY_UID}
   name: ${MY_NAME}.05-final
 spec:

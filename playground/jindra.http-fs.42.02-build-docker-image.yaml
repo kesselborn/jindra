@@ -11,6 +11,8 @@ metadata:
     jindra.io/wait-for: build-docker-image
   creationTimestamp: null
   labels:
+    jindra.io/pipeline: http-fs
+    jindra.io/run: "42"
     jindra.io/uid: ${MY_UID}
   name: ${MY_NAME}.02-build-docker-image
 spec:

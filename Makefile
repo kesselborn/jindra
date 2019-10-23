@@ -13,7 +13,7 @@ k8s-pod-watcher: pkg/jindra/tools/k8spodstatus/*.go pkg/jindra/tools/k8spodstatu
 	cd ${shell dirname $<} && go build ./cmd/$@ && cp $@ $(CURDIR)/$@
 
 test:
-	cd pkg/jindra/tools/crij && go test -v 
+#	cd pkg/jindra/tools/crij && go test -v 
 	cd pkg/jindra && go test -timeout 30s -v || { test $$? = 1 && code -d /tmp/expected /tmp/got; }
 
 local: docker-image

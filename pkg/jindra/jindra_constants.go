@@ -19,4 +19,8 @@ const (
 	inResourceContainerNamePrefix  = "jindra-resource-in-"
 	outResourceContainerNamePrefix = "jindra-resource-out-"
 	resourceVolumePrefix           = "jindra-resource-"
+
+	nameFormatString        = "jindra.%s.%02d."
+	rsyncSecretFormatString = nameFormatString + "rsync-keys"
+	configMapFormatString   = nameFormatString + "stages"
 )
