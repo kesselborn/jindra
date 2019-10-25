@@ -154,7 +154,7 @@ func jobFileContents(file string, t *testing.T) *batch.Job {
 	return &data
 }
 
-func TxestJob(t *testing.T) {
+func TestJob(t *testing.T) {
 	job, _ := PipelineRunJob(getExamplePipeline(t), 42)
 	expected := *jobFileContents(path.Join(fixtureDir, "jindra.http-fs.42.yaml"), t)
 
@@ -178,8 +178,8 @@ func TestRsyncSSHSecret(t *testing.T) {
 
 	// we need to cheat a little bit here, as the keys themselves will always differ
 	// but we want to test the structure nevertheless
-	expected.Data["priv"] = secret.Data["priv"]
-	expected.Data["pub"] = secret.Data["pub"]
+	expected.Data[rsyncSecretPrivateKey] = secret.Data[rsyncSecretPrivateKey]
+	expected.Data[rsyncSecretPubKey] = secret.Data[rsyncSecretPubKey]
 
 	if !reflect.DeepEqual(expected, secret) {
 		t.Fatalf("\t%2d: %-80s %s", 0, "rsync ssh secret should be correct", errMsg(t, expected, secret))

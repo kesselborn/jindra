@@ -20,7 +20,28 @@ const (
 	outResourceContainerNamePrefix = "jindra-resource-out-"
 	resourceVolumePrefix           = "jindra-resource-"
 
-	nameFormatString        = "jindra.%s.%02d."
-	rsyncSecretFormatString = nameFormatString + "rsync-keys"
-	configMapFormatString   = nameFormatString + "stages"
+	nameFormatString        = "jindra.%s.%d"
+	rsyncSecretFormatString = nameFormatString + ".rsync-keys"
+	configMapFormatString   = nameFormatString + ".stages"
+
+	sempahoresMountName = "jindra-semaphores"
+	toolsMountName      = "jindra-tools"
+
+	// job containers
+	runnerImage                = "jindra/jindra-runner:latest"
+	runnerContainerName        = "runner"
+	podwatcherImage            = "jindra/pod-watcher:latest"
+	podwatcherContainerName    = "pod-watcher"
+	rsyncImage                 = "jindra/rsync-server:latest"
+	rsyncContainerName         = "rsync"
+	setSempahoresContainerName = "set-semaphores"
+	setSemaphoresImage         = "alpine"
+
+	rsyncSecretPubKey     = "pub"
+	rsyncSecretPrivateKey = "priv"
+
+	runnerServiceAccount = "jindra-runner"
+
+	jindraStagesMountPath  = "/jindra/stages"
+	stagesRunningSemaphore = "stages-running"
 )

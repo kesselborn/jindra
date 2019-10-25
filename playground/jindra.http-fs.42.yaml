@@ -3,20 +3,28 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: jindra.http-fs.42
+  labels:
+    jindra.io/pipeline: http-fs
+    jindra.io/run: "42"
 spec:
   backoffLimit: 0
   template:
     metadata:
-      name: jindra.pod.http-fs.42
+      name: jindra.http-fs.42
       labels:
-        app: jindra
+        jindra.io/pipeline: http-fs
+        jindra.io/run: "42"
     spec:
       serviceAccountName: jindra-runner
       restartPolicy: Never
       volumes:
 ############# volume from config map with all the pod specs
+      - name: jindra-tools
+        emptyDir: {}
       - name: jindra-semaphores
         emptyDir: {}
+      - emptyDir: {}
+        name: jindra-resource-transit
       - name: stages
         configMap:
           name: jindra.http-fs.42.stages
@@ -34,13 +42,13 @@ spec:
 ############# copy jindra-tools to shared dir, create semaphore files /jindra/tools (jindra generated)
       - name: set-semaphores
         image: alpine
+        imagePullPolicy: IfNotPresent
         command:
           - sh
           - -xc
-          - |
-            touch /jindra/semaphores/stages-running
+          - touch /var/lock/jindra/stages-running
         volumeMounts:
-        - mountPath: /jindra/semaphores
+        - mountPath: /var/lock/jindra
           name: jindra-semaphores
 
       containers:
@@ -52,30 +60,41 @@ spec:
           - { name: MY_IP, valueFrom: { fieldRef: { fieldPath: status.podIP } } }
           - { name: MY_NAME, valueFrom: { fieldRef: { fieldPath: metadata.name } } }
           - { name: MY_NAMESPACE, valueFrom: { fieldRef: { fieldPath: metadata.namespace } } }
-          - { name: MY_UID, valueFrom: { fieldRef: { fieldPath: metadata.uid } } }
           - { name: MY_NODE_NAME, valueFrom: { fieldRef: { fieldPath: spec.nodeName } } }
+          - { name: MY_UID, valueFrom: { fieldRef: { fieldPath: metadata.uid } } }
+
+          - { name: CONFIG_MAP_NAME_FORMAT_STRING, value: "jindra.%s.%d.stages"}
           - { name: JINDRA_PIPELINE_NAME, value: "http-fs" }
           - { name: JINDRA_PIPELINE_RUN_NO, value: "42" }
-
-          - { name: WAIT_FOR_ANNOTATION_KEY, value: "jindra.io/wait-for" }
+          - { name: JINDRA_SEMAPHORE_MOUNT_PATH, value: "/var/lock/jindra" }
+          - { name: JINDRA_STAGES_MOUNT_PATH, value: "/jindra/stages"}
           - { name: OUT_RESOURCE_ANNOTATION_KEY, value: "jindra.io/outputs" }
           - { name: OUT_RESOURCE_CONTAINER_NAME_PREFIX, value: "jindra-resource-out-" }
-          - { name: RUN_LABEL_KEY, value: "jindra.io/run" }
           - { name: PIPELINE_LABEL_KEY, value: "jindra.io/pipeline" }
+          - { name: STAGES_RUNNING_SEMAPHORE, value: "/var/lock/jindra/stages-running" }
           - { name: RSYNC_KEY_NAME_FORMAT_STRING, value: "jindra.%s.%d.rsync-keys"}
-          - { name: CONFIG_MAP_NAME_FORMAT_STRING, value: "jindra.%s.%d.stages"}
-
+          - { name: RUN_LABEL_KEY, value: "jindra.io/run" }
+          - { name: WAIT_FOR_ANNOTATION_KEY, value: "jindra.io/wait-for" }
         volumeMounts:
+        - mountPath: /jindra/resources/transit
+          name: jindra-resource-transit
+        - mountPath: /var/lock/jindra
+          name: jindra-semaphores
         - mountPath: /jindra/stages # mount stage pod yamls
           name: stages
-        - mountPath: /jindra/semaphores
-          name: jindra-semaphores
 ############# pod-watcher: app that returns results of a given pod and its containers
       - name: pod-watcher
         image: jindra/pod-watcher:latest
         imagePullPolicy: Always
+        args:
+          - /bin/sh
+          - -c
+          - /k8s-pod-watcher --debug --semaphore-file ${STAGES_RUNNING_SEMAPHORE}
+        env:
+        - name: STAGES_RUNNING_SEMAPHORE
+          value: /var/lock/jindra/stages-running
         volumeMounts:
-        - mountPath: /jindra/semaphores
+        - mountPath: /var/lock/jindra
           name: jindra-semaphores
 
 ############# rsync: transit containers for promoting artifacts
@@ -84,8 +103,9 @@ spec:
         image: jindra/rsync-server:latest
         env:
           - { name: SSH_ENABLE_ROOT, value: "true" }
+          - { name: STAGES_RUNNING_SEMAPHORE, value: "/var/lock/jindra/stages-running" }
         volumeMounts:
         - mountPath: /mnt/ssh         # public ssh key
           name: rsync
-        - mountPath: /jindra/semaphores
+        - mountPath: /var/lock/jindra
           name: jindra-semaphores

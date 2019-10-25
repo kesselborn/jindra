@@ -74,7 +74,7 @@ func getResourceNames(p core.Pod) []string {
 
 func volumes(resources []string) []core.Volume {
 	volumes := []core.Volume{}
-	emptyDirVolumes := []string{"jindra-tools", "jindra-semaphores"}
+	emptyDirVolumes := []string{toolsMountName, sempahoresMountName}
 	for _, name := range resources {
 		emptyDirVolumes = append(emptyDirVolumes, resourceVolumePrefix+name)
 	}
@@ -211,8 +211,8 @@ func jindraDebugContainer(toolsMount, semaphoreMount core.VolumeMount, resourceN
 }
 
 func jindraContainers(p core.Pod, stageName string, waitFor string, ppl jindra.JindraPipeline) []core.Container {
-	toolsMount := core.VolumeMount{Name: "jindra-tools", MountPath: toolsPrefixPath, ReadOnly: true}
-	semaphoreMount := core.VolumeMount{Name: "jindra-semaphores", MountPath: semaphoresPrefixPath}
+	toolsMount := core.VolumeMount{Name: toolsMountName, MountPath: toolsPrefixPath, ReadOnly: true}
+	semaphoreMount := core.VolumeMount{Name: sempahoresMountName, MountPath: semaphoresPrefixPath}
 
 	containers := append(p.Spec.Containers, jindraWatcherContainer(stageName, waitFor, semaphoreMount))
 
@@ -280,7 +280,7 @@ func getResource(ppl jindra.JindraPipeline, name string) (core.Container, error)
 				{Name: "transit.version", Value: `{"ref":"tmp"}`},
 				{Name: "transit.source.private_key", ValueFrom: &core.EnvVarSource{
 					SecretKeyRef: &core.SecretKeySelector{
-						Key:                  "priv",
+						Key:                  rsyncSecretPrivateKey,
 						LocalObjectReference: core.LocalObjectReference{Name: fmt.Sprintf(rsyncSecretFormatString, ppl.Name, ppl.Status.BuildNo)},
 					},
 				}},
@@ -303,7 +303,7 @@ func jindraInitContainers(p core.Pod, ppl jindra.JindraPipeline) []core.Containe
 		createLocksSrc = append(createLocksSrc, "touch "+path.Join(semaphoresPrefixPath, "init-container-"+name))
 	}
 
-	toolsMount := core.VolumeMount{Name: "jindra-tools", MountPath: toolsPrefixPath}
+	toolsMount := core.VolumeMount{Name: toolsMountName, MountPath: toolsPrefixPath}
 
 	initContainers := []core.Container{
 		{
@@ -311,7 +311,7 @@ func jindraInitContainers(p core.Pod, ppl jindra.JindraPipeline) []core.Containe
 			Image:           "jindra/tools",
 			ImagePullPolicy: "Always",
 			VolumeMounts: []core.VolumeMount{
-				{Name: "jindra-semaphores", MountPath: semaphoresPrefixPath},
+				{Name: sempahoresMountName, MountPath: semaphoresPrefixPath},
 				toolsMount,
 			},
 			Command: []string{"sh", "-xc", `cp /jindra/contrib/* ` + toolsPrefixPath + `
@@ -440,8 +440,8 @@ func rsyncSSHSecret(ppl jindra.JindraPipeline, buildNo int) (core.Secret, error)
 			APIVersion: "v1",
 		},
 		Data: map[string][]byte{
-			"priv": privateKey,
-			"pub":  publicKey,
+			rsyncSecretPrivateKey: privateKey,
+			rsyncSecretPubKey:     publicKey,
 		},
 		Type: core.SecretType("Opaque"),
 		ObjectMeta: metav1.ObjectMeta{
@@ -460,6 +460,8 @@ func defaultLabels(name string, buildNo int) map[string]string {
 
 // PipelineRunJob creates the job that runs the pipeline
 func PipelineRunJob(ppl jindra.JindraPipeline, buildNo int) (batch.Job, error) {
+	backoffLimit := int32(0)
+
 	return batch.Job{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "batch/v1",
@@ -467,6 +469,112 @@ func PipelineRunJob(ppl jindra.JindraPipeline, buildNo int) (batch.Job, error) {
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: defaultLabels(ppl.Name, buildNo),
+			Name:   fmt.Sprintf(nameFormatString, ppl.Name, buildNo),
+		},
+		Spec: batch.JobSpec{
+			BackoffLimit: &backoffLimit,
+			Template: core.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: defaultLabels(ppl.Name, buildNo),
+					Name:   fmt.Sprintf(nameFormatString, ppl.Name, buildNo),
+				},
+				Spec: core.PodSpec{
+					RestartPolicy:      core.RestartPolicyNever,
+					ServiceAccountName: runnerServiceAccount,
+					Volumes: append(volumes([]string{"transit"}),
+						core.Volume{
+							Name: "stages", VolumeSource: core.VolumeSource{
+								ConfigMap: &core.ConfigMapVolumeSource{
+									LocalObjectReference: core.LocalObjectReference{
+										Name: fmt.Sprintf(configMapFormatString, ppl.Name, buildNo),
+									},
+								},
+							},
+						},
+						core.Volume{
+							Name: "rsync", VolumeSource: core.VolumeSource{
+								Secret: &core.SecretVolumeSource{
+									SecretName: fmt.Sprintf(rsyncSecretFormatString, ppl.Name, buildNo),
+									Items: []core.KeyToPath{
+										{Key: rsyncSecretPubKey, Path: "./authorized_keys"},
+									},
+								},
+							},
+						},
+					),
+					Containers: []core.Container{
+						{
+							Name:            runnerContainerName,
+							Image:           runnerImage,
+							ImagePullPolicy: core.PullAlways,
+							Env: []core.EnvVar{
+								{Name: "MY_IP", ValueFrom: &core.EnvVarSource{FieldRef: &core.ObjectFieldSelector{FieldPath: "status.podIP"}}},
+								{Name: "MY_NAME", ValueFrom: &core.EnvVarSource{FieldRef: &core.ObjectFieldSelector{FieldPath: "metadata.name"}}},
+								{Name: "MY_NAMESPACE", ValueFrom: &core.EnvVarSource{FieldRef: &core.ObjectFieldSelector{FieldPath: "metadata.namespace"}}},
+								{Name: "MY_NODE_NAME", ValueFrom: &core.EnvVarSource{FieldRef: &core.ObjectFieldSelector{FieldPath: "spec.nodeName"}}},
+								{Name: "MY_UID", ValueFrom: &core.EnvVarSource{FieldRef: &core.ObjectFieldSelector{FieldPath: "metadata.uid"}}},
+
+								{Name: "CONFIG_MAP_NAME_FORMAT_STRING", Value: configMapFormatString},
+								{Name: "JINDRA_PIPELINE_NAME", Value: ppl.Name},
+								{Name: "JINDRA_PIPELINE_RUN_NO", Value: fmt.Sprintf("%d", buildNo)},
+								{Name: "JINDRA_SEMAPHORE_MOUNT_PATH", Value: semaphoresPrefixPath},
+								{Name: "JINDRA_STAGES_MOUNT_PATH", Value: "/jindra/stages"},
+								{Name: "OUT_RESOURCE_ANNOTATION_KEY", Value: outResourceAnnotationKey},
+								{Name: "OUT_RESOURCE_CONTAINER_NAME_PREFIX", Value: outResourceContainerNamePrefix},
+								{Name: "PIPELINE_LABEL_KEY", Value: pipelineLabelKey},
+								{Name: "STAGES_RUNNING_SEMAPHORE", Value: path.Join(semaphoresPrefixPath, stagesRunningSemaphore)},
+								{Name: "RSYNC_KEY_NAME_FORMAT_STRING", Value: rsyncSecretFormatString},
+								{Name: "RUN_LABEL_KEY", Value: runLabelKey},
+								{Name: "WAIT_FOR_ANNOTATION_KEY", Value: waitForAnnotationKey},
+							},
+							VolumeMounts: append(getVolumeMounts(core.Container{}, []string{"transit"}),
+								core.VolumeMount{MountPath: semaphoresPrefixPath, Name: sempahoresMountName},
+								core.VolumeMount{MountPath: jindraStagesMountPath, Name: "stages"},
+							),
+						},
+						{
+							Name:            podwatcherContainerName,
+							Image:           podwatcherImage,
+							ImagePullPolicy: core.PullAlways,
+							Env: []core.EnvVar{
+								{Name: "STAGES_RUNNING_SEMAPHORE", Value: path.Join(semaphoresPrefixPath, stagesRunningSemaphore)},
+							},
+							Args: []string{
+								"/bin/sh",
+								"-c",
+								"/k8s-pod-watcher --debug --semaphore-file ${STAGES_RUNNING_SEMAPHORE}",
+							},
+							VolumeMounts: []core.VolumeMount{
+								core.VolumeMount{MountPath: semaphoresPrefixPath, Name: sempahoresMountName},
+							},
+						},
+						{
+							Name:            rsyncContainerName,
+							Image:           rsyncImage,
+							ImagePullPolicy: core.PullAlways,
+							VolumeMounts: []core.VolumeMount{
+								core.VolumeMount{MountPath: "/mnt/ssh", Name: "rsync"},
+								core.VolumeMount{MountPath: semaphoresPrefixPath, Name: sempahoresMountName},
+							},
+							Env: []core.EnvVar{
+								{Name: "SSH_ENABLE_ROOT", Value: "true"},
+								{Name: "STAGES_RUNNING_SEMAPHORE", Value: path.Join(semaphoresPrefixPath, stagesRunningSemaphore)},
+							},
+						},
+					},
+					InitContainers: []core.Container{
+						{
+							Name:            setSempahoresContainerName,
+							Image:           setSemaphoresImage,
+							ImagePullPolicy: core.PullIfNotPresent,
+							Command:         []string{"sh", "-xc", "touch " + path.Join(semaphoresPrefixPath, stagesRunningSemaphore)},
+							VolumeMounts: []core.VolumeMount{
+								core.VolumeMount{MountPath: semaphoresPrefixPath, Name: sempahoresMountName},
+							},
+						},
+					},
+				},
+			},
 		},
 	}, nil
 }
@@ -540,13 +648,14 @@ func pipelineConfigs(ppl jindra.JindraPipeline, buildNo int) (pipelineRunConfigs
 
 		defaultMode := int32(256)
 		stage.Spec.Volumes = append(volumes(getResourceNames(stage)), core.Volume{
+			// TODO: delete ... this is not being used
 			Name: "jindra-rsync-ssh-keys",
 			VolumeSource: core.VolumeSource{
 				Secret: &core.SecretVolumeSource{
 					SecretName:  fmt.Sprintf(rsyncSecretFormatString, ppl.Name, ppl.Status.BuildNo),
 					DefaultMode: &defaultMode,
 					Items: []core.KeyToPath{
-						core.KeyToPath{Key: "priv", Path: "./jindra"},
+						core.KeyToPath{Key: rsyncSecretPrivateKey, Path: "./jindra"},
 					},
 				},
 			},

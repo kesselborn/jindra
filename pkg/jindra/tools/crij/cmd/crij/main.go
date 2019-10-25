@@ -29,7 +29,7 @@ func callScript(json string, waitOnFail bool, args []string) {
 
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Printf("error executing script: %s ... execute with options '-wait-on-fail' to leave the container running for 5 more minutes) \noutput was: %s\n", json, err, out)
+		log.Printf("error executing script: %s ... execute with options '-wait-on-fail' to leave the container running for 5 more minutes) \noutput was: %s\n", err, out)
 		if waitOnFail {
 			time.Sleep(5 * time.Minute)
 		}

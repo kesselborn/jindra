@@ -108,7 +108,7 @@ kubectl patch secret    $(printf "${RSYNC_KEY_NAME_FORMAT_STRING}"  "${JINDRA_PI
 kubectl patch configmap $(printf "${CONFIG_MAP_NAME_FORMAT_STRING}" "${JINDRA_PIPELINE_NAME}" ${JINDRA_PIPELINE_RUN_NO}) --patch "$(cat /tmp/patch.yaml)"
 )
 
-for f in $(ls /jindra/stages/*.yaml|grep -v "[0-9][0-9]-on-error.yaml$"|grep -v "[0-9][0-9]-on-success.yaml$"|grep -v "[0-9][0-9]-final.yaml$")
+for f in $(ls ${JINDRA_STAGES_MOUNT_PATH}/*.yaml|grep -v "[0-9][0-9]-on-error.yaml$"|grep -v "[0-9][0-9]-on-success.yaml$"|grep -v "[0-9][0-9]-final.yaml$")
 do
   run_pod $f
   res=$?
@@ -120,12 +120,12 @@ done
 
 if [ "${res}" = "0" ]
 then
-  run_pod /jindra/stages/[0-9][0-9]-on-success.yaml
+  run_pod ${JINDRA_STAGES_MOUNT_PATH}/[0-9][0-9]-on-success.yaml
 else
-  run_pod /jindra/stages/[0-9][0-9]-on-error.yaml
+  run_pod ${JINDRA_STAGES_MOUNT_PATH}/[0-9][0-9]-on-error.yaml
 fi
 
-run_pod /jindra/stages/[0-9][0-9]-final.yaml
+run_pod ${JINDRA_STAGES_MOUNT_PATH}/[0-9][0-9]-final.yaml
 
-rm /jindra/semaphores/stages-running
+rm ${STAGES_RUNNING_SEMAPHORE}
 exit ${res}

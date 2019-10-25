@@ -15,4 +15,3 @@ RUN go get -v && go build -x ./... && go build ./cmd/k8s-pod-watcher
 FROM jindra/jindra-runner
 #COPY --from=certs /etc/ssl/certs/* /etc/ssl/certs/
 COPY --from=builder /src/k8s-pod-watcher /
-CMD ./k8s-pod-watcher --debug --semaphore-file /jindra/semaphores/stages-running
