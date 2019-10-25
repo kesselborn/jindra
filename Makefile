@@ -1,7 +1,7 @@
 DOCKER_IMAGE=jindra/jindra
 GO_FILES=${shell find pkg/controller -name "*.go"} ${shell find pkg/apis -name "*.go"}
 
-all: k8s-pod-watcher kubectl-podstatus crij build/_output/bin/jindra
+all: jindra-cli k8s-pod-watcher kubectl-podstatus crij build/_output/bin/jindra
 
 crij: pkg/jindra/tools/crij/*.go pkg/jindra/tools/crij/cmd/crij/*.go
 	cd ${shell dirname $<} && go build ./cmd/$@ && cp $@ $(CURDIR)/$@
@@ -10,6 +10,9 @@ kubectl-podstatus: pkg/jindra/tools/k8spodstatus/*.go pkg/jindra/tools/k8spodsta
 	cd ${shell dirname $<} && go build ./cmd/$@ && cp $@ $(CURDIR)/$@
 
 k8s-pod-watcher: pkg/jindra/tools/k8spodstatus/*.go pkg/jindra/tools/k8spodstatus/cmd/k8s-pod-watcher/*.go 
+	cd ${shell dirname $<} && go build ./cmd/$@ && cp $@ $(CURDIR)/$@
+
+jindra-cli: pkg/jindra/*.go pkg/jindra/cmd/jindra-cli/*.go
 	cd ${shell dirname $<} && go build ./cmd/$@ && cp $@ $(CURDIR)/$@
 
 test:

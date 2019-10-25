@@ -428,7 +428,7 @@ func generateSSHKeyPair() (priv []byte, pub []byte, errdx error) {
 	return priv, ssh.MarshalAuthorizedKey(publicRsaKey), nil
 }
 
-func rsyncSSHSecret(ppl jindra.JindraPipeline, buildNo int) (core.Secret, error) {
+func RsyncSSHSecret(ppl jindra.JindraPipeline, buildNo int) (core.Secret, error) {
 	privateKey, publicKey, err := generateSSHKeyPair()
 	if err != nil {
 		return core.Secret{}, fmt.Errorf("error creating keypair: %s", err)

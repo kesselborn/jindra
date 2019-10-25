@@ -173,7 +173,7 @@ func TestConfigMap(t *testing.T) {
 }
 
 func TestRsyncSSHSecret(t *testing.T) {
-	secret, _ := rsyncSSHSecret(getExamplePipeline(t), 42)
+	secret, _ := RsyncSSHSecret(getExamplePipeline(t), 42)
 	expected := *secretFileContents(path.Join(fixtureDir, "jindra.http-fs.42.rsync-keys.yaml"), t)
 
 	// we need to cheat a little bit here, as the keys themselves will always differ

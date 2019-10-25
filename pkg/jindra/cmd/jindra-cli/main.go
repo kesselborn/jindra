@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/ghodss/yaml"
 	jindraApi "github.com/kesselborn/jindra/pkg/apis/jindra/v1alpha1"
@@ -19,7 +20,54 @@ func configMap(p jindraApi.JindraPipeline, buildNo int) {
 		log.Fatalf("error converting jindra pipeline config to config map for pipeline run: %s", err)
 	}
 
+	fmt.Println("---")
 	fmt.Println(interface2yaml(cm))
+}
+
+func job(p jindraApi.JindraPipeline, buildNo int) {
+	job, err := jindra.PipelineRunJob(p, buildNo)
+	if err != nil {
+		log.Fatalf("error converting jindra pipeline config to job for pipeline run: %s", err)
+	}
+
+	fmt.Println("---")
+	fmt.Println(interface2yaml(job))
+}
+
+func secret(p jindraApi.JindraPipeline, buildNo int) {
+	secret, err := jindra.RsyncSSHSecret(p, buildNo)
+	if err != nil {
+		log.Fatalf("error converting jindra pipeline config to secret for pipeline run: %s", err)
+	}
+
+	fmt.Println("---")
+	fmt.Println(interface2yaml(secret))
+}
+
+func stage(p jindraApi.JindraPipeline, buildNo int, stageKey string) {
+	cm, err := jindra.PipelineRunConfigMap(p, buildNo)
+	if err != nil {
+		log.Fatalf("error converting jindra pipeline config to config map for pipeline run: %s", err)
+	}
+
+	podSrc, ok := cm.Data[stageKey]
+	if !ok {
+		log.Fatalf("no stage config with name %s found", strings.TrimSuffix(stageKey, ".yaml"))
+	}
+
+	fmt.Println("---")
+	fmt.Println(podSrc)
+}
+
+func stageNames(p jindraApi.JindraPipeline, buildNo int) {
+	cm, err := jindra.PipelineRunConfigMap(p, buildNo)
+	if err != nil {
+		log.Fatalf("error converting jindra pipeline config to config map for pipeline run: %s", err)
+	}
+
+	for k := range cm.Data {
+		fmt.Println(strings.TrimSuffix(k, ".yaml"))
+	}
 }
 
 func main() {
@@ -32,7 +80,12 @@ func main() {
 Usage: %s [OPTIONS] <command>
 
 Commands:
-  cm      : print out configmap
+  all         : print all configs necessary to run the pipeline (can be piped into 'kubectl apply -f-')
+  stage STAGE : print stage configuration
+  stagenames  : print stage names (which can be used with the stage sub command)
+  configmap   : print configmap
+  job         : print runner job
+  secret      : print secret
 
 Options: 
 `, os.Args[0])
@@ -51,7 +104,7 @@ Options:
 		os.Exit(exitCode)
 	}
 
-	if config == nil || *help {
+	if config == nil || *config == "" || *help {
 		usage(*help)
 	}
 
@@ -66,8 +119,23 @@ Options:
 	}
 
 	switch flag.Arg(0) {
-	case "cm":
+	case "all":
+		secret(p, *buildNo)
 		configMap(p, *buildNo)
+		job(p, *buildNo)
+	case "configmap":
+		configMap(p, *buildNo)
+	case "job":
+		job(p, *buildNo)
+	case "secret":
+		secret(p, *buildNo)
+	case "stage":
+		if flag.Arg(1) == "" {
+			usage(false)
+		}
+		stage(p, *buildNo, flag.Arg(1)+".yaml")
+	case "stagenames":
+		stageNames(p, *buildNo)
 	case "":
 		fmt.Println("no sub command given")
 		usage(false)
