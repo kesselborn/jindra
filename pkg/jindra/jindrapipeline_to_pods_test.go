@@ -211,6 +211,25 @@ func TestStageConfigs(t *testing.T) {
 
 }
 
+func TestWaitForDebugContainer(t *testing.T) {
+	ppl := getExamplePipeline(t)
+	for _, stage := range ppl.Spec.Stages {
+		if stage.Name == "build-docker-image" {
+			stage.ObjectMeta.Annotations[servicesAnnotationKey] = ""
+		}
+	}
+
+	configs, _ := pipelineConfigs(ppl, 42)
+	waitForAnnotation := configs["02-build-docker-image.yaml"].ObjectMeta.Annotations[waitForAnnotationKey]
+
+	expected := "build-docker-image,jindra-debug-container"
+
+	if !reflect.DeepEqual(expected, waitForAnnotation) {
+		t.Fatalf("\t%2d: %-80s %s", 0, "config map should be correct", errMsg(t, expected, waitForAnnotation))
+	}
+
+}
+
 func TestAnnotationEnvConverter(t *testing.T) {
 	annotation := `
 		  slack.params.text=Job succeeded

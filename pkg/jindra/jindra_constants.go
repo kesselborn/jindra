@@ -9,6 +9,8 @@ const (
 	inResourceEnvAnnotationKey  = "jindra.io/inputs-envs"
 	outResourceEnvAnnotationKey = "jindra.io/outputs-envs"
 
+	debugContainerName = "jindra-debug-container"
+
 	runLabelKey      = "jindra.io/run"
 	pipelineLabelKey = "jindra.io/pipeline"
 

@@ -105,6 +105,12 @@ func getWaitFor(p core.Pod) []string {
 		}
 	}
 
+	if p.Annotations[debugContainerAnnotationKey] == "enable" {
+		if !services[debugContainerName] {
+			waitFor = append(waitFor, debugContainerName)
+		}
+	}
+
 	return waitFor
 }
 
@@ -189,7 +195,7 @@ rm %s
 
 func jindraDebugContainer(toolsMount, semaphoreMount core.VolumeMount, resourceNames []string) core.Container {
 	c := core.Container{
-		Name:  "jindra-debug-container",
+		Name:  debugContainerName,
 		Image: "alpine",
 		Args:  []string{"sh", "-c", "sleep 600"},
 		Env: []core.EnvVar{
@@ -635,11 +641,11 @@ func pipelineConfigs(ppl jindra.JindraPipeline, buildNo int) (pipelineRunConfigs
 			stage.Labels[k] = v
 		}
 
-		stage.Annotations[waitForAnnotationKey] = strings.Join(getWaitFor(stage), ",")
-
 		stageName := fmt.Sprintf("%02d-%s", i+1, stage.GetName())
 		name := fmt.Sprintf("${MY_NAME}.%s", stageName)
 		stage.SetName(name)
+
+		stage.Annotations[waitForAnnotationKey] = strings.Join(getWaitFor(stage), ",")
 
 		stage.Spec.Containers = jindraContainers(stage, stageName, strings.Join(getWaitFor(stage), ","), ppl)
 		stage.Spec.InitContainers = jindraInitContainers(stage, ppl)
