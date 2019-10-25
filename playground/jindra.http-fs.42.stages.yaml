@@ -231,7 +231,14 @@ data:
       - args:
         - sh
         - -c
-        - sleep 600
+        - |-
+          touch /DELETE_ME_TO_STOP_DEBUG_CONTAINER
+          echo "waiting for /DELETE_ME_TO_STOP_DEBUG_CONTAINER to be deleted "
+          while test -f /DELETE_ME_TO_STOP_DEBUG_CONTAINER
+          do
+            sleep 1
+            printf "."
+          done
         env:
         - name: JOB_IP
           value: ${MY_IP}

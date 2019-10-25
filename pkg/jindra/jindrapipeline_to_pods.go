@@ -197,7 +197,13 @@ func jindraDebugContainer(toolsMount, semaphoreMount core.VolumeMount, resourceN
 	c := core.Container{
 		Name:  debugContainerName,
 		Image: "alpine",
-		Args:  []string{"sh", "-c", "sleep 600"},
+		Args: []string{"sh", "-c", `touch /DELETE_ME_TO_STOP_DEBUG_CONTAINER
+echo "waiting for /DELETE_ME_TO_STOP_DEBUG_CONTAINER to be deleted "
+while test -f /DELETE_ME_TO_STOP_DEBUG_CONTAINER
+do
+  sleep 1
+  printf "."
+done`},
 		Env: []core.EnvVar{
 			{Name: "JOB_IP", Value: "${MY_IP}"},
 		},
