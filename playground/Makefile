@@ -18,3 +18,25 @@ deploy: update-stages
 secrets:
 	-kubectl -n jindra create secret generic deploy-key --from-file=key=jindra-deploy.key
 	kubectl -n jindra apply -f dockerhub-secret.yaml
+
+.PHONY:../jindra-cli
+../jindra-cli:
+	make -C ../ jindra-cli
+
+jindra.http-fs.42.01-build-go-binary.yaml: ../jindra-cli
+	../jindra-cli -build-no 42 -c pipeline-example.yaml stage 01-build-go-binary > $@
+
+jindra.http-fs.42.02-build-docker-image.yaml: ../jindra-cli
+	../jindra-cli -build-no 42 -c pipeline-example.yaml stage 02-build-docker-image > $@
+
+jindra.http-fs.42.03-on-success.yaml: ../jindra-cli
+	../jindra-cli -build-no 42 -c pipeline-example.yaml stage 03-on-success > $@
+
+jindra.http-fs.42.04-on-error.yaml: ../jindra-cli
+	../jindra-cli -build-no 42 -c pipeline-example.yaml stage 04-on-error > $@
+
+jindra.http-fs.42.05-final.yaml: ../jindra-cli
+	../jindra-cli -build-no 42 -c pipeline-example.yaml stage 05-final > $@
+
+jindra.http-fs.42.stages.yaml: ../jindra-cli
+	../jindra-cli -build-no 42 -c pipeline-example.yaml configmap > $@

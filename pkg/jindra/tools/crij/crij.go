@@ -7,6 +7,23 @@ import (
 	"strings"
 )
 
+// SimpleEnvFileToEnv reads a file of the form
+//
+// foo=bar
+// bar=baz
+//
+// and setz those env vars in the processes environmenT
+func SimpleEnvFileToEnv(envContent string) {
+	for _, envvar := range strings.Split(envContent, "\n") {
+		tokens := strings.SplitN(strings.TrimLeft(envvar, " 	"), "=", 2)
+		if len(tokens) != 2 {
+			continue
+		}
+
+		os.Setenv(tokens[0], tokens[1])
+	}
+}
+
 // EnvToJSON converts env variables to json structures:
 // foo.bar=baz
 // foo.baz=baz

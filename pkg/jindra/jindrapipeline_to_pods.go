@@ -264,6 +264,10 @@ func jindraContainers(p core.Pod, stageName string, waitFor string, ppl jindra.J
 			path.Join(toolsPrefixPath, "crij"),
 			"-env-prefix=" + outName,
 			"-semaphore-file=" + path.Join(semaphoresPrefixPath, "steps-running"),
+			"-env-file=" + path.Join(resourcesPrefixPath, outName, resourceEnvFile),
+			"-ignore-missing-env-file",
+			"-stderr-file=" + path.Join(resourcesPrefixPath, outName, outResourceStderrFile),
+			"-stdout-file=" + path.Join(resourcesPrefixPath, outName, outResourceStdoutFile),
 			"/opt/resource/out",
 			path.Join(resourcesPrefixPath, outName),
 		}
@@ -365,6 +369,10 @@ func jindraInitContainers(p core.Pod, ppl jindra.JindraPipeline) []core.Containe
 			path.Join(toolsPrefixPath, "crij"),
 			"-env-prefix=" + inName,
 			"-semaphore-file=" + path.Join(semaphoresPrefixPath, "setting-up-pod"),
+			"-env-file=" + path.Join(resourcesPrefixPath, inName, resourceEnvFile),
+			"-ignore-missing-env-file",
+			"-stderr-file=" + path.Join(resourcesPrefixPath, inName, inResourceStderrFile),
+			"-stdout-file=" + path.Join(resourcesPrefixPath, inName, inResourceStdoutFile),
 			"/opt/resource/in",
 			path.Join(resourcesPrefixPath, inName),
 		}

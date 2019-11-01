@@ -1,3 +1,4 @@
+---
 apiVersion: v1
 kind: Pod
 metadata:
@@ -52,6 +53,10 @@ spec:
     - /opt/jindra/bin/crij
     - -env-prefix=slack
     - -semaphore-file=/var/lock/jindra/steps-running
+    - -env-file=/jindra/resources/slack/.jindra.resource.env
+    - -ignore-missing-env-file
+    - -stderr-file=/jindra/resources/slack/.jindra.out-resource.stderr
+    - -stdout-file=/jindra/resources/slack/.jindra.out-resource.stdout
     - /opt/resource/out
     - /jindra/resources/slack
     env:
@@ -108,6 +113,10 @@ spec:
     - /opt/jindra/bin/crij
     - -env-prefix=transit
     - -semaphore-file=/var/lock/jindra/setting-up-pod
+    - -env-file=/jindra/resources/transit/.jindra.resource.env
+    - -ignore-missing-env-file
+    - -stderr-file=/jindra/resources/transit/.jindra.in-resource.stderr
+    - -stdout-file=/jindra/resources/transit/.jindra.in-resource.stdout
     - /opt/resource/in
     - /jindra/resources/transit
     env:
@@ -153,3 +162,4 @@ spec:
         path: ./jindra
       secretName: jindra.http-fs.42.rsync-keys
 status: {}
+

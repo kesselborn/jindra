@@ -3,6 +3,7 @@ package crij
 import (
 	"fmt"
 	"os"
+	"reflect"
 	"testing"
 )
 
@@ -13,11 +14,11 @@ func setEnv(env map[string]string) {
 	}
 }
 
-func errMsg(res, exp string, err error) string {
+func errMsg(exp, got string, err error) string {
 	if err != nil {
 		return fmt.Sprintf("unexpected error: %s\n", err)
 	}
-	return fmt.Sprintf("error: expected \n|%s|\n\ngot:\n|%s|\n", exp, res)
+	return fmt.Sprintf("error: expected \n|%s|\n\ngot:\n|%s|\n", exp, got)
 }
 
 func TestSimple(t *testing.T) {
@@ -163,5 +164,32 @@ func TestRootElements(t *testing.T) {
 
 	if res, err := EnvToJSON(""); res != exp || err != nil {
 		t.Errorf(errMsg(res, exp, err))
+	}
+}
+
+func TestEnvFileToEnv(t *testing.T) {
+	content := `
+		  slack.params.text=Job succeeded
+		  slack.params.icon_emoji=":ghost:"
+		  slack.params.attachments='[{"color":"#00ff00","text":"hihihi"}]'
+		  rsync.params.foo="bar"
+		  rsync.source.url=rsync://foo.bar
+  `
+	SimpleEnvFileToEnv(content)
+
+	for _, test := range []struct {
+		got         string
+		expectation string
+		desc        string
+	}{
+		{os.Getenv("slack.params.text"), "Job succeeded", "env var should be set correctly"},
+		{os.Getenv("slack.params.icon_emoji"), `":ghost:"`, "env var should be set correctly"},
+		{os.Getenv("slack.params.attachments"), `'[{"color":"#00ff00","text":"hihihi"}]'`, "env var should be set correctly"},
+		{os.Getenv("rsync.params.foo"), `"bar"`, "env var should be set correctly"},
+		{os.Getenv("rsync.source.url"), "rsync://foo.bar", "env var should be set correctly"},
+	} {
+		if !reflect.DeepEqual(test.expectation, test.got) {
+			t.Errorf(errMsg(test.expectation, test.got, nil))
+		}
 	}
 }

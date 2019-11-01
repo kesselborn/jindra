@@ -143,14 +143,11 @@ func secretFileContents(file string, t *testing.T) *core.Secret {
 func jobFileContents(file string, t *testing.T) *batch.Job {
 	var data batch.Job
 
-	fmt.Fprintf(os.Stderr, "%s", string(jsonFromYamlFile(file, t)))
-
 	err := json.Unmarshal(jsonFromYamlFile(file, t), &data)
 	if err != nil {
 		t.Fatalf("error json unmarshaling data from %s: %s", file, err)
 	}
 
-	fmt.Fprintf(os.Stderr, "%#v", data)
 	return &data
 }
 

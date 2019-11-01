@@ -1,3 +1,4 @@
+---
 apiVersion: v1
 data:
   01-build-go-binary.yaml: |
@@ -67,6 +68,10 @@ data:
         - /opt/jindra/bin/crij
         - -env-prefix=transit
         - -semaphore-file=/var/lock/jindra/steps-running
+        - -env-file=/jindra/resources/transit/.jindra.resource.env
+        - -ignore-missing-env-file
+        - -stderr-file=/jindra/resources/transit/.jindra.out-resource.stderr
+        - -stdout-file=/jindra/resources/transit/.jindra.out-resource.stdout
         - /opt/resource/out
         - /jindra/resources/transit
         env:
@@ -124,6 +129,10 @@ data:
         - /opt/jindra/bin/crij
         - -env-prefix=git
         - -semaphore-file=/var/lock/jindra/setting-up-pod
+        - -env-file=/jindra/resources/git/.jindra.resource.env
+        - -ignore-missing-env-file
+        - -stderr-file=/jindra/resources/git/.jindra.in-resource.stderr
+        - -stdout-file=/jindra/resources/git/.jindra.in-resource.stdout
         - /opt/resource/in
         - /jindra/resources/git
         env:
@@ -259,6 +268,10 @@ data:
         - /opt/jindra/bin/crij
         - -env-prefix=transit
         - -semaphore-file=/var/lock/jindra/steps-running
+        - -env-file=/jindra/resources/transit/.jindra.resource.env
+        - -ignore-missing-env-file
+        - -stderr-file=/jindra/resources/transit/.jindra.out-resource.stderr
+        - -stdout-file=/jindra/resources/transit/.jindra.out-resource.stdout
         - /opt/resource/out
         - /jindra/resources/transit
         env:
@@ -293,6 +306,10 @@ data:
         - /opt/jindra/bin/crij
         - -env-prefix=registry-image
         - -semaphore-file=/var/lock/jindra/steps-running
+        - -env-file=/jindra/resources/registry-image/.jindra.resource.env
+        - -ignore-missing-env-file
+        - -stderr-file=/jindra/resources/registry-image/.jindra.out-resource.stderr
+        - -stdout-file=/jindra/resources/registry-image/.jindra.out-resource.stdout
         - /opt/resource/out
         - /jindra/resources/registry-image
         env:
@@ -357,6 +374,10 @@ data:
         - /opt/jindra/bin/crij
         - -env-prefix=transit
         - -semaphore-file=/var/lock/jindra/setting-up-pod
+        - -env-file=/jindra/resources/transit/.jindra.resource.env
+        - -ignore-missing-env-file
+        - -stderr-file=/jindra/resources/transit/.jindra.in-resource.stderr
+        - -stdout-file=/jindra/resources/transit/.jindra.in-resource.stdout
         - /opt/resource/in
         - /jindra/resources/transit
         env:
@@ -457,6 +478,10 @@ data:
         - /opt/jindra/bin/crij
         - -env-prefix=slack
         - -semaphore-file=/var/lock/jindra/steps-running
+        - -env-file=/jindra/resources/slack/.jindra.resource.env
+        - -ignore-missing-env-file
+        - -stderr-file=/jindra/resources/slack/.jindra.out-resource.stderr
+        - -stdout-file=/jindra/resources/slack/.jindra.out-resource.stdout
         - /opt/resource/out
         - /jindra/resources/slack
         env:
@@ -513,6 +538,10 @@ data:
         - /opt/jindra/bin/crij
         - -env-prefix=transit
         - -semaphore-file=/var/lock/jindra/setting-up-pod
+        - -env-file=/jindra/resources/transit/.jindra.resource.env
+        - -ignore-missing-env-file
+        - -stderr-file=/jindra/resources/transit/.jindra.in-resource.stderr
+        - -stdout-file=/jindra/resources/transit/.jindra.in-resource.stdout
         - /opt/resource/in
         - /jindra/resources/transit
         env:
@@ -612,6 +641,10 @@ data:
         - /opt/jindra/bin/crij
         - -env-prefix=slack
         - -semaphore-file=/var/lock/jindra/steps-running
+        - -env-file=/jindra/resources/slack/.jindra.resource.env
+        - -ignore-missing-env-file
+        - -stderr-file=/jindra/resources/slack/.jindra.out-resource.stderr
+        - -stdout-file=/jindra/resources/slack/.jindra.out-resource.stdout
         - /opt/resource/out
         - /jindra/resources/slack
         env:
@@ -734,6 +767,10 @@ data:
         - /opt/jindra/bin/crij
         - -env-prefix=slack
         - -semaphore-file=/var/lock/jindra/steps-running
+        - -env-file=/jindra/resources/slack/.jindra.resource.env
+        - -ignore-missing-env-file
+        - -stderr-file=/jindra/resources/slack/.jindra.out-resource.stderr
+        - -stdout-file=/jindra/resources/slack/.jindra.out-resource.stdout
         - /opt/resource/out
         - /jindra/resources/slack
         env:
@@ -809,3 +846,4 @@ metadata:
     jindra.io/pipeline: http-fs
     jindra.io/run: "42"
   name: jindra.http-fs.42.stages
+

@@ -61,7 +61,7 @@ spec:
           jindra.io/outputs: transit,registry-image
           jindra.io/outputs-envs: |
             registry-image.params.image=./image.tar
-          jindra.io/services: jindra-debug-container 
+          jindra.io/services: jindra-debug-container
       spec:
         containers:
           - name: build-docker-image

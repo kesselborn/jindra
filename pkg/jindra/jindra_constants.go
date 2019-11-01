@@ -14,9 +14,14 @@ const (
 	runLabelKey      = "jindra.io/run"
 	pipelineLabelKey = "jindra.io/pipeline"
 
-	resourcesPrefixPath  = "/jindra/resources"
-	semaphoresPrefixPath = "/var/lock/jindra"
-	toolsPrefixPath      = "/opt/jindra/bin"
+	resourcesPrefixPath   = "/jindra/resources"
+	semaphoresPrefixPath  = "/var/lock/jindra"
+	toolsPrefixPath       = "/opt/jindra/bin"
+	resourceEnvFile       = ".jindra.resource.env"
+	inResourceStdoutFile  = ".jindra.in-resource.stdout"
+	inResourceStderrFile  = ".jindra.in-resource.stderr"
+	outResourceStdoutFile = ".jindra.out-resource.stdout"
+	outResourceStderrFile = ".jindra.out-resource.stderr"
 
 	inResourceContainerNamePrefix  = "jindra-resource-in-"
 	outResourceContainerNamePrefix = "jindra-resource-out-"
@@ -46,4 +51,6 @@ const (
 
 	jindraStagesMountPath  = "/jindra/stages"
 	stagesRunningSemaphore = "stages-running"
+
+	outResourceEnvFileName = ".jindra.env"
 )

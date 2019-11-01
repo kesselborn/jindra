@@ -1,5 +1,6 @@
 DOCKER_IMAGE=jindra/jindra
 GO_FILES=${shell find pkg/controller -name "*.go"} ${shell find pkg/apis -name "*.go"}
+PLAYGROUND_DIR=playground
 
 all: jindra-cli k8s-pod-watcher kubectl-podstatus crij build/_output/bin/jindra
 

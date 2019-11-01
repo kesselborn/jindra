@@ -3,6 +3,8 @@ module github.com/kesselborn/jindra
 require (
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-openapi/spec v0.19.0
+	github.com/kesselborn/jindra/pkg/jindra/tools/crij v0.0.0-20191025165718-e293e4e88eb4 // indirect
+	github.com/kesselborn/jindra/pkg/jindra/tools/k8spodstatus v0.0.0-20191025165718-e293e4e88eb4 // indirect
 	github.com/operator-framework/operator-sdk v0.10.1-0.20191002141136-1a5772eb7185
 	github.com/spf13/pflag v1.0.3
 	golang.org/x/crypto v0.0.0-20190404164418-38d8ce5564a5
