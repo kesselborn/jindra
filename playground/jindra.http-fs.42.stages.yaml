@@ -101,7 +101,6 @@ data:
           readOnly: true
         - mountPath: /var/lock/jindra
           name: jindra-semaphores
-          readOnly: true
       initContainers:
       - command:
         - sh
@@ -301,7 +300,6 @@ data:
           readOnly: true
         - mountPath: /var/lock/jindra
           name: jindra-semaphores
-          readOnly: true
       - args:
         - /opt/jindra/bin/crij
         - -env-prefix=registry-image
@@ -344,7 +342,6 @@ data:
           readOnly: true
         - mountPath: /var/lock/jindra
           name: jindra-semaphores
-          readOnly: true
       initContainers:
       - command:
         - sh
@@ -511,7 +508,6 @@ data:
           readOnly: true
         - mountPath: /var/lock/jindra
           name: jindra-semaphores
-          readOnly: true
       initContainers:
       - command:
         - sh
@@ -674,7 +670,6 @@ data:
           readOnly: true
         - mountPath: /var/lock/jindra
           name: jindra-semaphores
-          readOnly: true
       initContainers:
       - command:
         - sh
@@ -800,7 +795,6 @@ data:
           readOnly: true
         - mountPath: /var/lock/jindra
           name: jindra-semaphores
-          readOnly: true
       initContainers:
       - command:
         - sh

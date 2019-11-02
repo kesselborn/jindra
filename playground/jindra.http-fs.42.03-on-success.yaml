@@ -86,7 +86,6 @@ spec:
       readOnly: true
     - mountPath: /var/lock/jindra
       name: jindra-semaphores
-      readOnly: true
   initContainers:
   - command:
     - sh

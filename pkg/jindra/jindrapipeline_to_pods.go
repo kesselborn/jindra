@@ -232,8 +232,6 @@ func jindraContainers(p core.Pod, stageName string, waitFor string, ppl jindra.J
 		containers = append([]core.Container{jindraDebugContainer(toolsMount, semaphoreMount, getResourceNames(p))}, containers...)
 	}
 
-	semaphoreMount.ReadOnly = true
-
 	outResourceEnvs := map[string][]core.EnvVar{}
 	annotation, ok := p.Annotations[outResourceEnvAnnotationKey]
 
