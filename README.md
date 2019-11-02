@@ -35,6 +35,16 @@
 ...
 
 - `RESOURCE_DIR/.jindra.resource.env`
+- how do parameters work (env -> json)
+  - places where to set parameters, order & precedence
+Resource outputs are saved in resource folder at:
+
+- `.jindra.in-resource.stderr`
+- `.jindra.in-resource.stdout`
+
+- `.jindra.out-resource.stderr`
+- `.jindra.out-resource.stdout`
+
 
 ## Debugging
 

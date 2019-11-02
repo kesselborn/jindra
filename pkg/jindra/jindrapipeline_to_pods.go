@@ -229,7 +229,7 @@ func jindraContainers(p core.Pod, stageName string, waitFor string, ppl jindra.J
 	containers := append(p.Spec.Containers, jindraWatcherContainer(stageName, waitFor, semaphoreMount))
 
 	if p.Annotations[debugContainerAnnotationKey] == "enable" {
-		containers = append(containers, jindraDebugContainer(toolsMount, semaphoreMount, getResourceNames(p)))
+		containers = append([]core.Container{jindraDebugContainer(toolsMount, semaphoreMount, getResourceNames(p))}, containers...)
 	}
 
 	semaphoreMount.ReadOnly = true

@@ -201,6 +201,33 @@ data:
             weight: 1
       containers:
       - args:
+        - sh
+        - -c
+        - |-
+          touch /DELETE_ME_TO_STOP_DEBUG_CONTAINER
+          echo "waiting for /DELETE_ME_TO_STOP_DEBUG_CONTAINER to be deleted "
+          while test -f /DELETE_ME_TO_STOP_DEBUG_CONTAINER
+          do
+            sleep 1
+            printf "."
+          done
+        env:
+        - name: JOB_IP
+          value: ${MY_IP}
+        image: alpine
+        name: jindra-debug-container
+        resources: {}
+        volumeMounts:
+        - mountPath: /opt/jindra/bin
+          name: jindra-tools
+          readOnly: true
+        - mountPath: /var/lock/jindra
+          name: jindra-semaphores
+        - mountPath: /jindra/resources/transit
+          name: jindra-resource-transit
+        - mountPath: /jindra/resources/registry-image
+          name: jindra-resource-registry-image
+      - args:
         - --context
         - /jindra/resources/transit
         - --tarPath
@@ -237,33 +264,6 @@ data:
         volumeMounts:
         - mountPath: /var/lock/jindra
           name: jindra-semaphores
-      - args:
-        - sh
-        - -c
-        - |-
-          touch /DELETE_ME_TO_STOP_DEBUG_CONTAINER
-          echo "waiting for /DELETE_ME_TO_STOP_DEBUG_CONTAINER to be deleted "
-          while test -f /DELETE_ME_TO_STOP_DEBUG_CONTAINER
-          do
-            sleep 1
-            printf "."
-          done
-        env:
-        - name: JOB_IP
-          value: ${MY_IP}
-        image: alpine
-        name: jindra-debug-container
-        resources: {}
-        volumeMounts:
-        - mountPath: /opt/jindra/bin
-          name: jindra-tools
-          readOnly: true
-        - mountPath: /var/lock/jindra
-          name: jindra-semaphores
-        - mountPath: /jindra/resources/transit
-          name: jindra-resource-transit
-        - mountPath: /jindra/resources/registry-image
-          name: jindra-resource-registry-image
       - args:
         - /opt/jindra/bin/crij
         - -env-prefix=transit
@@ -356,9 +356,9 @@ data:
           # until main steps are finished
           touch /var/lock/jindra/steps-running
           touch /var/lock/jindra/outputs-running
+          touch /var/lock/jindra/container-jindra-debug-container
           touch /var/lock/jindra/container-build-docker-image
           touch /var/lock/jindra/container-jindra-watcher
-          touch /var/lock/jindra/container-jindra-debug-container
           touch /var/lock/jindra/container-jindra-resource-out-transit
           touch /var/lock/jindra/container-jindra-resource-out-registry-image
         image: jindra/tools
