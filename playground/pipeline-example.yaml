@@ -41,7 +41,24 @@ spec:
         annotations:
           jindra.io/inputs: git
           jindra.io/outputs: transit
+          jindra.io/first-init-containers: hello,kubernetes
       spec:
+        initContainers:
+          - name: world
+            image: alpine
+            command: ["sh", "-c", "echo 'world'"]
+          - name: kubernetes
+            image: alpine
+            command: ["sh", "-c", "echo 'kubernetes'"]
+          - name: exlamation
+            image: alpine
+            command: ["sh", "-c", "echo '!'"]
+          - name: hello
+            image: alpine
+            command: ["sh", "-c", "echo 'hello'"]
+          - name: 2exlamation
+            image: alpine
+            command: ["sh", "-c", "echo '!!'"]
         containers:
           - name: build-go-binary
             image: golang

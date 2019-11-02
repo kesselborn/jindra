@@ -6,6 +6,7 @@ data:
     kind: Pod
     metadata:
       annotations:
+        jindra.io/first-init-containers: hello,kubernetes
         jindra.io/inputs: git
         jindra.io/outputs: transit
         jindra.io/wait-for: build-go-binary
@@ -104,6 +105,30 @@ data:
       initContainers:
       - command:
         - sh
+        - -c
+        - echo 'hello'
+        image: alpine
+        name: hello
+        resources: {}
+        volumeMounts:
+        - mountPath: /jindra/resources/git
+          name: jindra-resource-git
+        - mountPath: /jindra/resources/transit
+          name: jindra-resource-transit
+      - command:
+        - sh
+        - -c
+        - echo 'kubernetes'
+        image: alpine
+        name: kubernetes
+        resources: {}
+        volumeMounts:
+        - mountPath: /jindra/resources/git
+          name: jindra-resource-git
+        - mountPath: /jindra/resources/transit
+          name: jindra-resource-transit
+      - command:
+        - sh
         - -xc
         - |-
           cp /jindra/contrib/* /opt/jindra/bin
@@ -151,6 +176,42 @@ data:
         - mountPath: /opt/jindra/bin
           name: jindra-tools
           readOnly: true
+      - command:
+        - sh
+        - -c
+        - echo 'world'
+        image: alpine
+        name: world
+        resources: {}
+        volumeMounts:
+        - mountPath: /jindra/resources/git
+          name: jindra-resource-git
+        - mountPath: /jindra/resources/transit
+          name: jindra-resource-transit
+      - command:
+        - sh
+        - -c
+        - echo '!'
+        image: alpine
+        name: exlamation
+        resources: {}
+        volumeMounts:
+        - mountPath: /jindra/resources/git
+          name: jindra-resource-git
+        - mountPath: /jindra/resources/transit
+          name: jindra-resource-transit
+      - command:
+        - sh
+        - -c
+        - echo '!!'
+        image: alpine
+        name: 2exlamation
+        resources: {}
+        volumeMounts:
+        - mountPath: /jindra/resources/git
+          name: jindra-resource-git
+        - mountPath: /jindra/resources/transit
+          name: jindra-resource-transit
       restartPolicy: Never
       volumes:
       - emptyDir: {}

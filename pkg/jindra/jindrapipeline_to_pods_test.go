@@ -227,6 +227,19 @@ func TestWaitForDebugContainer(t *testing.T) {
 
 }
 
+func TestInvalidFirstContainer(t *testing.T) {
+	ppl := getExamplePipeline(t)
+	ppl.Spec.Stages[0].Annotations[firstInitContainers] = "xxxxxxxx"
+
+	_, err := pipelineConfigs(ppl, 42)
+	expected := fmt.Errorf("error constructing init containers: defined firstInitContainer xxxxxxxx not found in pipeline definition")
+
+	if !reflect.DeepEqual(expected, err) {
+		t.Fatalf("\t%2d: %-80s %s", 0, "incorrect first init container annotation should yield error", errMsg(t, expected.Error(), err.Error()))
+	}
+
+}
+
 func TestAnnotationEnvConverter(t *testing.T) {
 	annotation := `
 		  slack.params.text=Job succeeded

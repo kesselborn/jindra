@@ -137,6 +137,9 @@ func setDefaults(p *core.Pod, buildNo int) {
 	for i, c := range p.Spec.Containers {
 		p.Spec.Containers[i].VolumeMounts = append(p.Spec.Containers[i].VolumeMounts, getVolumeMounts(c, getResourceNames(*p))...)
 	}
+	for i, c := range p.Spec.InitContainers {
+		p.Spec.InitContainers[i].VolumeMounts = append(p.Spec.InitContainers[i].VolumeMounts, getVolumeMounts(c, getResourceNames(*p))...)
+	}
 }
 
 func getVolumeMounts(c core.Container, resources []string) []core.VolumeMount {
@@ -305,7 +308,7 @@ func getResource(ppl jindra.JindraPipeline, name string) (core.Container, error)
 	return core.Container{}, fmt.Errorf("there is no resource with name %s", name)
 }
 
-func jindraInitContainers(p core.Pod, ppl jindra.JindraPipeline) []core.Container {
+func jindraInitContainers(p core.Pod, ppl jindra.JindraPipeline) ([]core.Container, error) {
 	createLocksSrc := []string{
 		"touch " + path.Join(semaphoresPrefixPath, "steps-running"),
 		"touch " + path.Join(semaphoresPrefixPath, "outputs-running"),
@@ -313,10 +316,6 @@ func jindraInitContainers(p core.Pod, ppl jindra.JindraPipeline) []core.Containe
 	for _, name := range getContainerNames(p) {
 		createLocksSrc = append(createLocksSrc, "touch "+path.Join(semaphoresPrefixPath, "container-"+name))
 	}
-	for _, name := range getInitContainerNames(p) {
-		createLocksSrc = append(createLocksSrc, "touch "+path.Join(semaphoresPrefixPath, "init-container-"+name))
-	}
-
 	toolsMount := core.VolumeMount{Name: toolsMountName, MountPath: toolsPrefixPath}
 
 	initContainers := []core.Container{
@@ -377,7 +376,33 @@ func jindraInitContainers(p core.Pod, ppl jindra.JindraPipeline) []core.Containe
 		initContainers = append(initContainers, c)
 	}
 
-	return initContainers
+	podInitContainers := map[string]core.Container{}
+	for _, container := range p.Spec.InitContainers {
+		podInitContainers[container.Name] = container
+	}
+
+	// prepend annotated firstInitContainers in correct order (loop down as we always prepend)
+	firstInitContainers := strings.Split(p.Annotations[firstInitContainers], ",")
+	for i := len(firstInitContainers) - 1; i >= 0; i-- {
+		if firstInitContainers[i] == "" {
+			continue
+		}
+		c, ok := podInitContainers[firstInitContainers[i]]
+		if !ok {
+			return initContainers, fmt.Errorf("defined firstInitContainer %s not found in pipeline definition", firstInitContainers[i])
+		}
+		initContainers = append([]core.Container{c}, initContainers...)
+		delete(podInitContainers, firstInitContainers[i])
+	}
+
+	// append other init containers in the order specified
+	for _, c := range p.Spec.InitContainers {
+		if _, ok := podInitContainers[c.Name]; ok {
+			initContainers = append(initContainers, podInitContainers[c.Name])
+		}
+	}
+
+	return initContainers, nil
 }
 
 func annotationToEnv(annotation string) map[string][]core.EnvVar {
@@ -660,7 +685,10 @@ func pipelineConfigs(ppl jindra.JindraPipeline, buildNo int) (pipelineRunConfigs
 		stage.Annotations[waitForAnnotationKey] = strings.Join(getWaitFor(stage), ",")
 
 		stage.Spec.Containers = jindraContainers(stage, stageName, strings.Join(getWaitFor(stage), ","), ppl)
-		stage.Spec.InitContainers = jindraInitContainers(stage, ppl)
+		var err error
+		if stage.Spec.InitContainers, err = jindraInitContainers(stage, ppl); err != nil {
+			return pipelineRunConfigs{}, fmt.Errorf("error constructing init containers: %s", err)
+		}
 
 		stage.Spec.Affinity = &core.Affinity{NodeAffinity: &nodeAffinity}
 
