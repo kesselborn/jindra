@@ -1,70 +1,62 @@
 set -x
-REPO_NAME=
-REPO_URL=
-COMMIT=${BUILD_VCS_NUMBER}
+REPO_URL=http://github.com/kesselborn/http-fs
+REPO_NAME=$(basename ${REPO_URL})
+COMMIT=e293e4e88eb4c665553b2bf58202fe7deb089349
 SHORT_COMMIT=${COMMIT:0:7}
 
-BUILD_ID=
-BUILD_NO=
+BUILD_NO=42
+USER=kesselborn
+AVATAR=https://pbs.twimg.com/profile_images/972145726095593472/jnRW3wxL_normal.jpg
 
-USER=
-AVATAR= # url to image
-
-if [ "$BUILD_STATUS" = "SUCCESS" ]
+if [ "${BUILD_STATUS:?build status not set}" = "SUCCESS" ]
 then
   MSG="Build #${BUILD_NO} of *${REPO_NAME}* successful"
-  USERNAME="🟢 happy ${USER}"
+  USERNAME="happy jindra"
+  COLOR="#00ff00"
 else
   MSG="Build #${BUILD_NO} of *${REPO_NAME}* failed"
-  USERNAME="🔴 sad ${USER}"
+  USERNAME="sad jindra"
+  COLOR="#ff0000"
 fi
 
 SLACK_POST_DATA="$(cat<<EOF
 {
   "username": "${USERNAME}",
   "as_user": false,
-  "icon_url": "${AVATAR}",
-  "text": "${MSG}",
-  "blocks": [
-    {
-      "type": "section",
-      "text": {
-        "type": "mrkdwn",
-        "text": "${MSG}"
-      }
-    },
-    {
-      "type": "divider"
-    },
-    {
-      "type": "section",
-      "fields": [
-        {
-          "type": "mrkdwn",
-          "text": "*Author:*\n<https://github.com/${USER}|${USER}>"
-        },
-        {
-          "type": "mrkdwn",
-          "text": "*Repo:*\n<${REPO_URL}|${REPO_NAME}>"
-        },
-        {
-          "type": "mrkdwn",
-          "text": "*Commit:*\n<${REPO_URL}/commit/${COMMIT}|${SHORT_COMMIT}>"
-        },
-        {
-          "type": "mrkdwn",
-          "text": "*TeamCity-Logs:*\n<${TC_BASE}${BUILD_ID}|Build #${BUILD_NO} logs>"
-        }
-      ]
-    },
-    {
-      "type": "divider"
-    }
-  ]
+  "icon_emoji": ":mermaid:",
+  "attachments": [
+   {
+       "mrkdwn_in": ["text"],
+       "color": "${COLOR}",
+       "author_name": "${USER}",
+       "author_icon": "https://placeimg.com/16/16/people",
+       "title": "${MSG}",
+       "title_link": "https://api.slack.com/",
+       "fields": [
+           {
+             "title": "Author",
+             "value": "<https://github.com/${USER}|${USER}>",
+             "short": true
+           },
+           {
+             "title": "Repo",
+             "value": "<${REPO_URL}|${REPO_NAME}>",
+             "short": true
+           },
+           {
+             "title": "Commit",
+             "value": "<${REPO_URL}/commit/${COMMIT}|${SHORT_COMMIT}>",
+             "short": true
+           },
+           {
+             "title": "Logs",
+             "value": "<http://heise.de|logs>",
+             "short": true
+           }
+       ]
+   }]
 }
 EOF
 )"
-
-set +x
 
 curl -s -X POST -H 'Content-type: application/json' --data "${SLACK_POST_DATA}" ${SLACK_WEBHOOK:?error: SLACK_WEBHOOK env variable is not set}
