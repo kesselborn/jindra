@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 function get_logs() {
   local pod=$1
 
@@ -13,11 +13,27 @@ function get_logs() {
   kubectl get pod ${pod} -ojson|jq .status
 }
 
+function wait_for_init_containers() {
+  local pod=$1
+
+  printf "waiting for %s init containers" ${pod}
+  while true
+  do
+    local state=$(wget -qO- localhost:8080/pod/${pod}?state=initcontainers)
+    printf "."
+    test  "${state}" = "Completed" && { echo; local return_value=0; }
+    test  "${state}" = "Failed"    && { echo; local return_value=1; }
+
+    test -n "${return_value}" && return ${return_value}
+    sleep 3
+  done
+}
+
 function wait_for_containers() {
   local pod=$1
   local containers=$2
 
-  printf "waiting for pod %s/%s " ${pod} ${containers}
+  printf "\nwaiting for pod %s/%s " ${pod} ${containers}
   while true
   do
     local state=$(wget -qO- localhost:8080/pod/${pod}?containers=${containers})
@@ -45,6 +61,12 @@ block_until_finished() {
     outputs_container_names="${outputs_container_names}${OUT_RESOURCE_CONTAINER_NAME_PREFIX}${c}"
   done
 
+  if ! wait_for_init_containers ${name}
+  then
+    echo "waiting for init containers ${name} failed"
+    return 1
+  fi
+
   if wait_for_containers ${name} ${wait_for}
   then
     if wait_for_containers ${name} ${outputs_container_names}
@@ -52,11 +74,11 @@ block_until_finished() {
       return 0
     else
       echo "waiting for outputs ${name}/${output} failed"
-      return 1
+      return 2
     fi
   else
     echo "waiting for steps ${name}/${wait_for} failed"
-    return 2
+    return 3
   fi
 }
 
@@ -74,7 +96,7 @@ EOF
   block_until_finished ${name}
   local pod_res=$?
   get_logs ${name}
-    kubectl delete --wait=false pod ${name}
+  kubectl delete --wait=false pod ${name}
   if [ "${pod_res}" = "0" ]
   then
     return 0

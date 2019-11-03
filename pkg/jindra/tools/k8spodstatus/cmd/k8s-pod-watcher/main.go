@@ -27,13 +27,15 @@ func (_ NullWriter) Write(p []byte) (n int, err error) {
 
 func handler(ns string) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
+		errorString := `unknown path ... needs to be:
+/pod/<pod>?containers=<container1>,<container2>,...
+/pod/<pod>?state=initcontainers
+/pod/<pod>?state=containers
+`
 		pathParts := strings.Split(req.URL.Path, "/")
 		debug.Printf("request path: %s\n", req.URL.Path)
 		if len(pathParts) != 3 {
-			http.Error(w, `unknown path ... needs to be:
-/pod/<pod>?containers=<container1>,<container2>,...
-/pod/<pod>?failed
-`, 404)
+			http.Error(w, errorString, 404)
 			return
 		}
 
@@ -45,8 +47,18 @@ func handler(ns string) func(w http.ResponseWriter, req *http.Request) {
 			log.Println("error:", err)
 		}
 
-		containers := req.FormValue("containers")
-		state := podInfo.State(strings.Split(containers, ",")...)
+		state := ""
+		queryParams := req.URL.Query()
+		if val, ok := queryParams["containers"]; ok {
+			state = k8spodstatus.State(podInfo.Containers, strings.Split(val[0], ",")...)
+		} else if val, ok := queryParams["state"]; ok && val[0] == "initcontainers" {
+			state = podInfo.InitContainersState()
+		} else if val, ok := queryParams["state"]; ok && val[0] == "containers" {
+			state = podInfo.ContainersState()
+		} else {
+			http.Error(w, errorString, 404)
+			return
+		}
 		io.WriteString(w, state)
 	}
 }

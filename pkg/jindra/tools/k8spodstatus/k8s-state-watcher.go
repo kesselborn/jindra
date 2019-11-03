@@ -51,26 +51,44 @@ type PodInfo struct {
 	InitContainers map[string]PodInfoStatus
 }
 
+func (pi PodInfo) ContainersState() string {
+	containerNames := []string{}
+	for name, _ := range pi.Containers {
+		containerNames = append(containerNames, name)
+	}
+
+	return State(pi.Containers, containerNames...)
+}
+
+func (pi PodInfo) InitContainersState() string {
+	containerNames := []string{}
+	for name, _ := range pi.InitContainers {
+		containerNames = append(containerNames, name)
+	}
+
+	return State(pi.InitContainers, containerNames...)
+}
+
 // State returns an aggregated State of the whole Pod
-func (pi PodInfo) State(containers ...string) string {
+func State(containers map[string]PodInfoStatus, containerNames ...string) string {
 	states := map[string]bool{}
 
-	fmt.Printf("containers: %#v\n", containers)
-	if len(containers) == 1 && containers[0] == "" {
+	fmt.Printf("containers: %#v\n", containerNames)
+	if len(containerNames) == 1 && containerNames[0] == "" {
 		return completed
 	}
 
-	for _, c := range containers {
+	for _, c := range containerNames {
 		switch {
-		case pi.Containers[c].State == running:
+		case containers[c].State == running:
 			states[running] = true
-		case pi.Containers[c].State == completed:
+		case containers[c].State == completed:
 			states[completed] = true
-		case pi.Containers[c].State == waiting:
+		case containers[c].State == waiting:
 			states[waiting] = true
-		case pi.Containers[c].State == terminated && *pi.Containers[c].Success:
+		case containers[c].State == terminated && *containers[c].Success:
 			states[completed] = true
-		case pi.Containers[c].State == terminated && !*pi.Containers[c].Success:
+		case containers[c].State == terminated && !*containers[c].Success:
 			states[failed] = true
 		}
 	}
@@ -78,10 +96,10 @@ func (pi PodInfo) State(containers ...string) string {
 	switch {
 	case states[failed]:
 		return failed
-	case states[completed] && !states[running]:
-		return completed
 	case states[waiting] && !states[running]:
 		return waiting
+	case states[completed] && !states[running]:
+		return completed
 	case states[running]:
 		return running
 	}
