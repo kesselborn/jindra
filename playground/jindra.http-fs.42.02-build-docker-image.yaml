@@ -76,7 +76,8 @@ spec:
     - -c
     - |
       printf "waiting for steps to finish "
-      while ! wget -qO- ${MY_IP}:8080/pod/${MY_NAME}.02-build-docker-image?containers=build-docker-image|grep Completed &>/dev/null
+      containers=$(echo "build-docker-image"|sed "s/[,]*jindra-debug-container//g")
+      while ! wget -qO- ${MY_IP}:8080/pod/${MY_NAME}.02-build-docker-image?containers=${containers}|grep Completed &>/dev/null
       do
         printf "."
         sleep 3

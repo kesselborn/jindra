@@ -49,7 +49,8 @@ data:
         - -c
         - |
           printf "waiting for steps to finish "
-          while ! wget -qO- ${MY_IP}:8080/pod/${MY_NAME}.01-build-go-binary?containers=build-go-binary|grep Completed &>/dev/null
+          containers=$(echo "build-go-binary"|sed "s/[,]*jindra-debug-container//g")
+          while ! wget -qO- ${MY_IP}:8080/pod/${MY_NAME}.01-build-go-binary?containers=${containers}|grep Completed &>/dev/null
           do
             printf "."
             sleep 3
@@ -308,7 +309,8 @@ data:
         - -c
         - |
           printf "waiting for steps to finish "
-          while ! wget -qO- ${MY_IP}:8080/pod/${MY_NAME}.02-build-docker-image?containers=build-docker-image|grep Completed &>/dev/null
+          containers=$(echo "build-docker-image"|sed "s/[,]*jindra-debug-container//g")
+          while ! wget -qO- ${MY_IP}:8080/pod/${MY_NAME}.02-build-docker-image?containers=${containers}|grep Completed &>/dev/null
           do
             printf "."
             sleep 3
@@ -516,7 +518,8 @@ data:
         - -c
         - |
           printf "waiting for steps to finish "
-          while ! wget -qO- ${MY_IP}:8080/pod/${MY_NAME}.03-on-success?containers=|grep Completed &>/dev/null
+          containers=$(echo ""|sed "s/[,]*jindra-debug-container//g")
+          while ! wget -qO- ${MY_IP}:8080/pod/${MY_NAME}.03-on-success?containers=${containers}|grep Completed &>/dev/null
           do
             printf "."
             sleep 3
@@ -678,7 +681,8 @@ data:
         - -c
         - |
           printf "waiting for steps to finish "
-          while ! wget -qO- ${MY_IP}:8080/pod/${MY_NAME}.04-on-error?containers=|grep Completed &>/dev/null
+          containers=$(echo ""|sed "s/[,]*jindra-debug-container//g")
+          while ! wget -qO- ${MY_IP}:8080/pod/${MY_NAME}.04-on-error?containers=${containers}|grep Completed &>/dev/null
           do
             printf "."
             sleep 3
@@ -803,7 +807,8 @@ data:
         - -c
         - |
           printf "waiting for steps to finish "
-          while ! wget -qO- ${MY_IP}:8080/pod/${MY_NAME}.05-final?containers=|grep Completed &>/dev/null
+          containers=$(echo ""|sed "s/[,]*jindra-debug-container//g")
+          while ! wget -qO- ${MY_IP}:8080/pod/${MY_NAME}.05-final?containers=${containers}|grep Completed &>/dev/null
           do
             printf "."
             sleep 3

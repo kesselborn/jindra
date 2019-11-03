@@ -178,14 +178,15 @@ func jindraWatcherContainer(stageName, waitFor string, semaphoreMount core.Volum
 		Name:  "jindra-watcher",
 		Image: "alpine",
 		Args: []string{"sh", "-c", fmt.Sprintf(`printf "waiting for steps to finish "
-while ! wget -qO- ${MY_IP}:8080/pod/${MY_NAME}.%s?containers=%s|grep Completed &>/dev/null
+containers=$(echo "%s"|sed "s/[,]*%s//g")
+while ! wget -qO- ${MY_IP}:8080/pod/${MY_NAME}.%s?containers=${containers}|grep Completed &>/dev/null
 do
   printf "."
   sleep 3
 done
 echo
 rm %s
-`, stageName, waitFor, path.Join(semaphoresPrefixPath, "steps-running")),
+`, waitFor, debugContainerName, stageName, path.Join(semaphoresPrefixPath, "steps-running")),
 		},
 		Env: []core.EnvVar{
 			{Name: "JOB_IP", Value: "${MY_IP}"},

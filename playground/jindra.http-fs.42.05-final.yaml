@@ -32,7 +32,8 @@ spec:
     - -c
     - |
       printf "waiting for steps to finish "
-      while ! wget -qO- ${MY_IP}:8080/pod/${MY_NAME}.05-final?containers=|grep Completed &>/dev/null
+      containers=$(echo ""|sed "s/[,]*jindra-debug-container//g")
+      while ! wget -qO- ${MY_IP}:8080/pod/${MY_NAME}.05-final?containers=${containers}|grep Completed &>/dev/null
       do
         printf "."
         sleep 3
