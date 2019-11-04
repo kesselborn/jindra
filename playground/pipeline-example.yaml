@@ -42,6 +42,7 @@ spec:
           jindra.io/inputs: git
           jindra.io/outputs: transit
           jindra.io/first-init-containers: hello,kubernetes
+          jindra.io/debug-resources: enable
       spec:
         initContainers:
           - name: world

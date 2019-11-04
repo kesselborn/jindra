@@ -55,6 +55,7 @@ spec:
     - -semaphore-file=/var/lock/jindra/steps-running
     - -env-file=/jindra/resources/slack/.jindra.resource.env
     - -ignore-missing-env-file
+    - -delete-env-file-after-read
     - -stderr-file=/jindra/resources/slack/.jindra.out-resource.stderr
     - -stdout-file=/jindra/resources/slack/.jindra.out-resource.stdout
     - /opt/resource/out

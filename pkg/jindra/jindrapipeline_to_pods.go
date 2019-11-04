@@ -239,6 +239,11 @@ func jindraContainers(p core.Pod, stageName string, waitFor string, ppl jindra.J
 	outResourceEnvs := map[string][]core.EnvVar{}
 	annotation, ok := p.Annotations[outResourceEnvAnnotationKey]
 
+	debugArgs := []string{}
+	if value, ok := p.Annotations[debugResourcesAnnotationKey]; ok && value == "enable" {
+		debugArgs = append(debugArgs, "-wait-on-fail", "-debug-out=/tmp/jindra.debug")
+	}
+
 	if ok {
 		outResourceEnvs = annotationToEnv(annotation)
 	}
@@ -262,17 +267,24 @@ func jindraContainers(p core.Pod, stageName string, waitFor string, ppl jindra.J
 			semaphoreMount,
 		}...)
 		c.Name = outResourceContainerNamePrefix + c.Name
-		c.Args = []string{
-			path.Join(toolsPrefixPath, "crij"),
-			"-env-prefix=" + outName,
-			"-semaphore-file=" + path.Join(semaphoresPrefixPath, "steps-running"),
-			"-env-file=" + path.Join(resourcesPrefixPath, outName, resourceEnvFile),
-			"-ignore-missing-env-file",
-			"-stderr-file=" + path.Join(resourcesPrefixPath, outName, outResourceStderrFile),
-			"-stdout-file=" + path.Join(resourcesPrefixPath, outName, outResourceStdoutFile),
-			"/opt/resource/out",
-			path.Join(resourcesPrefixPath, outName),
-		}
+		c.Args =
+			append(
+				append(
+					append([]string{
+						path.Join(toolsPrefixPath, "crij"),
+						"-env-prefix=" + outName,
+						"-semaphore-file=" + path.Join(semaphoresPrefixPath, "steps-running"),
+						"-env-file=" + path.Join(resourcesPrefixPath, outName, resourceEnvFile),
+						"-ignore-missing-env-file",
+						"-delete-env-file-after-read",
+						"-stderr-file=" + path.Join(resourcesPrefixPath, outName, outResourceStderrFile),
+						"-stdout-file=" + path.Join(resourcesPrefixPath, outName, outResourceStdoutFile),
+					}),
+					debugArgs...,
+				),
+				"/opt/resource/out",
+				path.Join(resourcesPrefixPath, outName))
+
 		containers = append(containers, c)
 	}
 
@@ -345,6 +357,11 @@ func jindraInitContainers(p core.Pod, ppl jindra.JindraPipeline) ([]core.Contain
 		inResourceEnvs = annotationToEnv(annotation)
 	}
 
+	debugArgs := []string{}
+	if value, ok := p.Annotations[debugResourcesAnnotationKey]; ok && value == "enable" {
+		debugArgs = append(debugArgs, "-wait-on-fail", "-debug-out=/tmp/jindra.debug")
+	}
+
 	for _, inName := range getInResourcesNames(p) {
 		c, err := getResource(ppl, inName)
 		if err != nil {
@@ -363,17 +380,23 @@ func jindraInitContainers(p core.Pod, ppl jindra.JindraPipeline) ([]core.Contain
 			toolsMount,
 		}...)
 		c.Name = inResourceContainerNamePrefix + c.Name
-		c.Command = []string{
-			path.Join(toolsPrefixPath, "crij"),
-			"-env-prefix=" + inName,
-			"-semaphore-file=" + path.Join(semaphoresPrefixPath, "setting-up-pod"),
-			"-env-file=" + path.Join(resourcesPrefixPath, inName, resourceEnvFile),
-			"-ignore-missing-env-file",
-			"-stderr-file=" + path.Join(resourcesPrefixPath, inName, inResourceStderrFile),
-			"-stdout-file=" + path.Join(resourcesPrefixPath, inName, inResourceStdoutFile),
-			"/opt/resource/in",
-			path.Join(resourcesPrefixPath, inName),
-		}
+		c.Args =
+			append(
+				append(
+					append([]string{
+						path.Join(toolsPrefixPath, "crij"),
+						"-env-prefix=" + inName,
+						"-semaphore-file=" + path.Join(semaphoresPrefixPath, "setting-up-pod"),
+						"-env-file=" + path.Join(resourcesPrefixPath, inName, resourceEnvFile),
+						"-ignore-missing-env-file",
+						"-delete-env-file-after-read",
+						"-stderr-file=" + path.Join(resourcesPrefixPath, inName, inResourceStderrFile),
+						"-stdout-file=" + path.Join(resourcesPrefixPath, inName, inResourceStdoutFile),
+					}),
+					debugArgs...,
+				),
+				"/opt/resource/in",
+				path.Join(resourcesPrefixPath, inName))
 		initContainers = append(initContainers, c)
 	}
 

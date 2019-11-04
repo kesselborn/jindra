@@ -9,6 +9,7 @@ const (
 	inResourceEnvAnnotationKey  = "jindra.io/inputs-envs"
 	outResourceEnvAnnotationKey = "jindra.io/outputs-envs"
 	firstInitContainers         = "jindra.io/first-init-containers"
+	debugResourcesAnnotationKey = "jindra.io/debug-resources"
 
 	debugContainerName = "jindra-debug-container"
 

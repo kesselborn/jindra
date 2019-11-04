@@ -56,6 +56,7 @@ spec:
     - -semaphore-file=/var/lock/jindra/steps-running
     - -env-file=/jindra/resources/slack/.jindra.resource.env
     - -ignore-missing-env-file
+    - -delete-env-file-after-read
     - -stderr-file=/jindra/resources/slack/.jindra.out-resource.stderr
     - -stdout-file=/jindra/resources/slack/.jindra.out-resource.stdout
     - /opt/resource/out
@@ -109,12 +110,13 @@ spec:
       name: jindra-semaphores
     - mountPath: /opt/jindra/bin
       name: jindra-tools
-  - command:
+  - args:
     - /opt/jindra/bin/crij
     - -env-prefix=transit
     - -semaphore-file=/var/lock/jindra/setting-up-pod
     - -env-file=/jindra/resources/transit/.jindra.resource.env
     - -ignore-missing-env-file
+    - -delete-env-file-after-read
     - -stderr-file=/jindra/resources/transit/.jindra.in-resource.stderr
     - -stdout-file=/jindra/resources/transit/.jindra.in-resource.stdout
     - /opt/resource/in
