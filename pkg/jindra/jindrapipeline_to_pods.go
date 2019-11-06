@@ -514,16 +514,22 @@ func RsyncSSHSecret(ppl jindra.JindraPipeline, buildNo int) (core.Secret, error)
 		Type: core.SecretType("Opaque"),
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   fmt.Sprintf(rsyncSecretFormatString, ppl.Name, buildNo),
-			Labels: defaultLabels(ppl.Name, buildNo),
+			Labels: defaultLabels(ppl.Name, buildNo, ""),
 		},
 	}, nil
 }
 
-func defaultLabels(name string, buildNo int) map[string]string {
-	return map[string]string{
+func defaultLabels(name string, buildNo int, stageName string) map[string]string {
+	labels := map[string]string{
 		"jindra.io/pipeline": name,
 		"jindra.io/run":      fmt.Sprintf("%d", buildNo),
 	}
+
+	if stageName != "" {
+		labels["jindra.io/stage"] = stageName
+	}
+
+	return labels
 }
 
 // PipelineRunJob creates the job that runs the pipeline
@@ -536,14 +542,14 @@ func PipelineRunJob(ppl jindra.JindraPipeline, buildNo int) (batch.Job, error) {
 			Kind:       "Job",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Labels: defaultLabels(ppl.Name, buildNo),
+			Labels: defaultLabels(ppl.Name, buildNo, ""),
 			Name:   fmt.Sprintf(nameFormatString, ppl.Name, buildNo),
 		},
 		Spec: batch.JobSpec{
 			BackoffLimit: &backoffLimit,
 			Template: core.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels: defaultLabels(ppl.Name, buildNo),
+					Labels: defaultLabels(ppl.Name, buildNo, ""),
 					Name:   fmt.Sprintf(nameFormatString, ppl.Name, buildNo),
 				},
 				Spec: core.PodSpec{
@@ -667,7 +673,7 @@ func PipelineRunConfigMap(ppl jindra.JindraPipeline, buildNo int) (core.ConfigMa
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   fmt.Sprintf(configMapFormatString, ppl.Name, buildNo),
-			Labels: defaultLabels(ppl.Name, buildNo),
+			Labels: defaultLabels(ppl.Name, buildNo, ""),
 		},
 		Data: cmData,
 	}, nil
@@ -699,7 +705,7 @@ func pipelineConfigs(ppl jindra.JindraPipeline, buildNo int) (pipelineRunConfigs
 			continue
 		}
 		setDefaults(&stage, buildNo)
-		for k, v := range defaultLabels(ppl.Name, buildNo) {
+		for k, v := range defaultLabels(ppl.Name, buildNo, stage.Name) {
 			stage.Labels[k] = v
 		}
 

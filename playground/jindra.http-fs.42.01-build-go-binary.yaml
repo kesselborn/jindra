@@ -12,6 +12,7 @@ metadata:
   labels:
     jindra.io/pipeline: http-fs
     jindra.io/run: "42"
+    jindra.io/stage: build-go-binary
     jindra.io/uid: ${MY_UID}
   name: ${MY_NAME}.01-build-go-binary
 spec:

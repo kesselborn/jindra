@@ -15,6 +15,7 @@ data:
       labels:
         jindra.io/pipeline: http-fs
         jindra.io/run: "42"
+        jindra.io/stage: build-go-binary
         jindra.io/uid: ${MY_UID}
       name: ${MY_NAME}.01-build-go-binary
     spec:
@@ -256,6 +257,7 @@ data:
       labels:
         jindra.io/pipeline: http-fs
         jindra.io/run: "42"
+        jindra.io/stage: build-docker-image
         jindra.io/uid: ${MY_UID}
       name: ${MY_NAME}.02-build-docker-image
     spec:
@@ -515,6 +517,7 @@ data:
       labels:
         jindra.io/pipeline: http-fs
         jindra.io/run: "42"
+        jindra.io/stage: on-success
         jindra.io/uid: ${MY_UID}
       name: ${MY_NAME}.03-on-success
     spec:
@@ -682,6 +685,7 @@ data:
       labels:
         jindra.io/pipeline: http-fs
         jindra.io/run: "42"
+        jindra.io/stage: on-error
         jindra.io/uid: ${MY_UID}
       name: ${MY_NAME}.04-on-error
     spec:
@@ -809,6 +813,7 @@ data:
       labels:
         jindra.io/pipeline: http-fs
         jindra.io/run: "42"
+        jindra.io/stage: final
         jindra.io/uid: ${MY_UID}
       name: ${MY_NAME}.05-final
     spec:
