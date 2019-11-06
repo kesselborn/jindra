@@ -122,6 +122,8 @@ spec:
     - /opt/resource/in
     - /jindra/resources/transit
     env:
+    - name: transit.params.rsync_opts
+      value: '["--delete", "--recursive"]'
     - name: transit.source.server
       value: ${MY_IP}
     - name: transit.source.base_dir

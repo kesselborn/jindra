@@ -303,6 +303,7 @@ func getResource(ppl jindra.JindraPipeline, name string) (core.Container, error)
 			Name:  "transit",
 			Image: "mrsixw/concourse-rsync-resource",
 			Env: []core.EnvVar{
+				{Name: "transit.params.rsync_opts", Value: `["--delete", "--recursive"]`},
 				{Name: "transit.source.server", Value: "${MY_IP}"},
 				{Name: "transit.source.base_dir", Value: "/tmp"},
 				{Name: "transit.source.user", Value: "root"},
