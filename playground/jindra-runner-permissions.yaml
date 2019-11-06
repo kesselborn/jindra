@@ -2,9 +2,10 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
+  annotations:
+    owner: daniel.bornkessel@innoq.com
   creationTimestamp: null
   name: jindra-runner
-  namespace: jindra
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -50,3 +51,97 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: jindra-runner
+---
+# adjust the psp to your needs
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: psp-jindra-runner
+  annotations:
+    owner: daniel.bornkessel@innoq.com
+    seccomp.security.alpha.kubernetes.io/allowedProfileNames: 'docker/default'
+    seccomp.security.alpha.kubernetes.io/defaultProfileName: 'docker/default'
+spec:
+  privileged: false
+  # Required to prevent escalations to root.
+  allowPrivilegeEscalation: false
+  # This is redundant with non-root + disallow privilege escalation,
+  # but we can provide it for defense in depth.
+  # requiredDropCapabilities:
+  #   - ALL
+  # Allow core volume types.
+  volumes:
+    - 'configMap'
+    - 'emptyDir'
+    - 'projected'
+    - 'secret'
+    - 'downwardAPI'
+    # Assume that persistentVolumes set up by the cluster admin are safe to use.
+    - 'persistentVolumeClaim'
+  hostNetwork: false
+  hostIPC: false
+  hostPID: false
+  runAsUser:
+  # Require the container to run without root privileges.
+  #  rule: 'MustRunAsNonRoot'
+    rule: 'RunAsAny'
+  seLinux:
+    # This policy assumes the nodes are using AppArmor rather than SELinux.
+    rule: 'RunAsAny'
+  # supplementalGroups:
+  #   rule: 'MustRunAs'
+  #   ranges:
+  #     # Forbid adding the root group.
+  #     - min: 1
+  #       max: 65535
+  # fsGroup:
+  #   rule: 'MustRunAs'
+  #   ranges:
+  #     # Forbid adding the root group.
+  #     - min: 1
+  #       max: 65535
+  supplementalGroups:
+    rule: 'RunAsAny'
+  fsGroup:
+    rule: 'RunAsAny'
+  readOnlyRootFilesystem: false
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  annotations:
+    owner: daniel.bornkessel@innoq.com
+  name: psp:jindra-runner
+rules:
+  - apiGroups:
+      - policy
+    resourceNames:
+      - psp-jindra-runner
+    resources:
+      - podsecuritypolicies
+    verbs:
+      - use
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  annotations:
+    owner: daniel.bornkessel@innoq.com
+  name: psp:jindra-runner
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: psp:jindra-runner
+subjects:
+  - kind: ServiceAccount
+    name: jindra-runner
+
+# uncomment to grant access to psp to every service account
+# - apiGroup: rbac.authorization.k8s.io
+#   kind: Group
+#   name: system:serviceaccounts
+
+# uncomment to grant access to psp to every authenticated user
+# - apiGroup: rbac.authorization.k8s.io
+#   kind: Group
+#   name: system:authenticated

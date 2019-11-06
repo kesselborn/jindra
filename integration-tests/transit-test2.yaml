@@ -1,0 +1,36 @@
+apiVersion: jindra.io/v1alpha1
+kind: JindraPipeline
+metadata:
+  name: transit-test
+spec:
+  stages:
+    - metadata:
+        name: one
+        annotations:
+          jindra.io/outputs: transit
+      spec:
+        containers:
+          - name: echo1
+            image: alpine
+            command: ["touch", "/jindra/resources/transit/one"]
+    - metadata:
+        name: two
+        annotations:
+          # comment input transit out so that final transit state
+          # does NOT container /jindra/resources/transit/one
+          # jindra.io/inputs: transit
+          jindra.io/outputs: transit
+      spec:
+        containers:
+          - name: echo2
+            image: alpine
+            command: ["touch", "/jindra/resources/transit/two"]
+    - metadata:
+        name: three
+        annotations:
+          jindra.io/inputs: transit
+      spec:
+        containers:
+          - name: sleep
+            image: alpine
+            command: ["sh", "-c", "sleep 3600"]
