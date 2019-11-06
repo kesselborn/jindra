@@ -496,6 +496,8 @@ func generateSSHKeyPair() (priv []byte, pub []byte, errdx error) {
 	return priv, ssh.MarshalAuthorizedKey(publicRsaKey), nil
 }
 
+// RsyncSSHSecret creates a Kubernetes Secret with a public (key: pub) and
+// private ssh key (key: priv)
 func RsyncSSHSecret(ppl jindra.JindraPipeline, buildNo int) (core.Secret, error) {
 	privateKey, publicKey, err := generateSSHKeyPair()
 	if err != nil {
