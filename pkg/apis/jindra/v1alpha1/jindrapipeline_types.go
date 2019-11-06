@@ -59,6 +59,20 @@ type JindraPipeline struct {
 	Status JindraPipelineStatus `json:"status,omitempty"`
 }
 
+// Validate validates the correctnes of the JindraPipeline object
+func (ppl JindraPipeline) Validate() error {
+	for _, f := range []func() error{
+		ppl.validateTriggerHasResource,
+		ppl.validateTriggerIsInResourceOfFirstStage,
+	} {
+		if err := f(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // JindraPipelineList contains a list of JindraPipeline

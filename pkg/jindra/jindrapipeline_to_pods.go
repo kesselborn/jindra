@@ -112,13 +112,13 @@ func PipelineRunJob(ppl jindra.JindraPipeline, buildNo int) (batch.Job, error) {
 								{Name: "JINDRA_PIPELINE_RUN_NO", Value: fmt.Sprintf("%d", buildNo)},
 								{Name: "JINDRA_SEMAPHORE_MOUNT_PATH", Value: semaphoresPrefixPath},
 								{Name: "JINDRA_STAGES_MOUNT_PATH", Value: "/jindra/stages"},
-								{Name: "OUT_RESOURCE_ANNOTATION_KEY", Value: outResourceAnnotationKey},
+								{Name: "OUT_RESOURCE_ANNOTATION_KEY", Value: jindra.OutResourceAnnotationKey},
 								{Name: "OUT_RESOURCE_CONTAINER_NAME_PREFIX", Value: outResourceContainerNamePrefix},
 								{Name: "PIPELINE_LABEL_KEY", Value: pipelineLabelKey},
 								{Name: "STAGES_RUNNING_SEMAPHORE", Value: path.Join(semaphoresPrefixPath, stagesRunningSemaphore)},
 								{Name: "RSYNC_KEY_NAME_FORMAT_STRING", Value: rsyncSecretFormatString},
 								{Name: "RUN_LABEL_KEY", Value: runLabelKey},
-								{Name: "WAIT_FOR_ANNOTATION_KEY", Value: waitForAnnotationKey},
+								{Name: "WAIT_FOR_ANNOTATION_KEY", Value: jindra.WaitForAnnotationKey},
 							},
 							VolumeMounts: append(jindraVolumeMounts(core.Container{}, []string{"transit"}),
 								core.VolumeMount{MountPath: semaphoresPrefixPath, Name: sempahoresMountName},
@@ -240,7 +240,7 @@ func generateStagePods(ppl jindra.JindraPipeline, buildNo int) (stagePods, error
 		name := fmt.Sprintf("${MY_NAME}.%s", stageName)
 		stage.SetName(name)
 
-		stage.Annotations[waitForAnnotationKey] = strings.Join(generateWaitForAnnotation(stage), ",")
+		stage.Annotations[jindra.WaitForAnnotationKey] = strings.Join(generateWaitForAnnotation(stage), ",")
 
 		stage.Spec.Containers = generateStageContainers(stage, stageName, strings.Join(generateWaitForAnnotation(stage), ","), ppl)
 		var err error
@@ -306,14 +306,14 @@ func generateStageInitContainers(p core.Pod, ppl jindra.JindraPipeline) ([]core.
 	toolsMount.ReadOnly = true
 
 	inResourceEnvs := map[string][]core.EnvVar{}
-	annotation, ok := p.Annotations[inResourceEnvAnnotationKey]
+	annotation, ok := p.Annotations[jindra.InResourceEnvAnnotationKey]
 
 	if ok {
 		inResourceEnvs = annotationToEnv(annotation)
 	}
 
 	debugArgs := []string{}
-	if value, ok := p.Annotations[debugResourcesAnnotationKey]; ok && value == "enable" {
+	if value, ok := p.Annotations[jindra.DebugResourcesAnnotationKey]; ok && value == "enable" {
 		debugArgs = append(debugArgs, "-wait-on-fail", "-debug-out=/tmp/jindra.debug")
 	}
 
@@ -361,7 +361,7 @@ func generateStageInitContainers(p core.Pod, ppl jindra.JindraPipeline) ([]core.
 	}
 
 	// prepend annotated firstInitContainers in correct order (loop down as we always prepend)
-	firstInitContainers := strings.Split(p.Annotations[firstInitContainers], ",")
+	firstInitContainers := strings.Split(p.Annotations[jindra.FirstInitContainers], ",")
 	for i := len(firstInitContainers) - 1; i >= 0; i-- {
 		if firstInitContainers[i] == "" {
 			continue
@@ -395,15 +395,15 @@ func generateStageContainers(p core.Pod, stageName string, waitFor string, ppl j
 
 	containers := append(p.Spec.Containers, watcherContainer(stageName, waitFor, semaphoreMount))
 
-	if p.Annotations[debugContainerAnnotationKey] == "enable" {
+	if p.Annotations[jindra.DebugContainerAnnotationKey] == "enable" {
 		containers = append([]core.Container{debugContainer(toolsMount, semaphoreMount, resourceNames(p))}, containers...)
 	}
 
 	outResourceEnvs := map[string][]core.EnvVar{}
-	annotation, ok := p.Annotations[outResourceEnvAnnotationKey]
+	annotation, ok := p.Annotations[jindra.OutResourceEnvAnnotationKey]
 
 	debugArgs := []string{}
-	if value, ok := p.Annotations[debugResourcesAnnotationKey]; ok && value == "enable" {
+	if value, ok := p.Annotations[jindra.DebugResourcesAnnotationKey]; ok && value == "enable" {
 		debugArgs = append(debugArgs, "-wait-on-fail", "-debug-out=/tmp/jindra.debug")
 	}
 

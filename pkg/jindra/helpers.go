@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/ghodss/yaml"
+	jindra "github.com/kesselborn/jindra/pkg/apis/jindra/v1alpha1"
 	"golang.org/x/crypto/ssh"
 	core "k8s.io/api/core/v1"
 )
@@ -49,7 +50,7 @@ func resourceNames(p core.Pod) []string {
 
 func inResourcesNames(p core.Pod) []string {
 	resourceNames := []string{}
-	if inResources := p.Annotations[inResourceAnnotationKey]; inResources != "" {
+	if inResources := p.Annotations[jindra.InResourceAnnotationKey]; inResources != "" {
 		resourceNames = append(resourceNames, strings.Split(inResources, ",")...)
 	}
 
@@ -58,7 +59,7 @@ func inResourcesNames(p core.Pod) []string {
 
 func outResourcesNames(p core.Pod) []string {
 	resourceNames := []string{}
-	if inResources := p.Annotations[outResourceAnnotationKey]; inResources != "" {
+	if inResources := p.Annotations[jindra.OutResourceAnnotationKey]; inResources != "" {
 		resourceNames = append(resourceNames, strings.Split(inResources, ",")...)
 	}
 
@@ -102,7 +103,7 @@ func generateWaitForAnnotation(p core.Pod) []string {
 	waitFor := []string{}
 	services := map[string]bool{}
 
-	for _, s := range strings.Split(p.Annotations[servicesAnnotationKey], ",") {
+	for _, s := range strings.Split(p.Annotations[jindra.ServicesAnnotationKey], ",") {
 		services[s] = true
 	}
 
@@ -112,7 +113,7 @@ func generateWaitForAnnotation(p core.Pod) []string {
 		}
 	}
 
-	if p.Annotations[debugContainerAnnotationKey] == "enable" {
+	if p.Annotations[jindra.DebugContainerAnnotationKey] == "enable" {
 		if !services[debugContainerName] {
 			waitFor = append(waitFor, debugContainerName)
 		}

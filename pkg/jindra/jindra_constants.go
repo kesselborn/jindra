@@ -1,16 +1,6 @@
 package jindra
 
 const (
-	inResourceAnnotationKey     = "jindra.io/inputs"
-	outResourceAnnotationKey    = "jindra.io/outputs"
-	servicesAnnotationKey       = "jindra.io/services"
-	waitForAnnotationKey        = "jindra.io/wait-for"
-	debugContainerAnnotationKey = "jindra.io/debug-container"
-	inResourceEnvAnnotationKey  = "jindra.io/inputs-envs"
-	outResourceEnvAnnotationKey = "jindra.io/outputs-envs"
-	firstInitContainers         = "jindra.io/first-init-containers"
-	debugResourcesAnnotationKey = "jindra.io/debug-resources"
-
 	debugContainerName = "jindra-debug-container"
 
 	runLabelKey      = "jindra.io/run"
