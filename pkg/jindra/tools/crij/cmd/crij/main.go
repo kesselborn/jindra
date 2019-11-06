@@ -160,9 +160,9 @@ func main() {
 				os.Exit(1)
 			}
 		}
-		if *deleteEnvFileAfterRead {
+		if !os.IsNotExist(err) && *deleteEnvFileAfterRead {
 			if err := os.Remove(*envFile); err != nil {
-				fmt.Fprintf(os.Stderr, "error deleting env file: %s -- continuing anyways\n")
+				fmt.Fprintf(os.Stderr, "error deleting env file: %s -- continuing anyways\n", err)
 			}
 		}
 		crij.SimpleEnvFileToEnv(string(content))
