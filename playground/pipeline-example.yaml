@@ -81,9 +81,15 @@ spec:
             registry-image.params.image=./image.tar
           jindra.io/services: jindra-debug-container
       spec:
+        volumes:
+        - emptyDir: {}
+          name: stage-volume
         containers:
           - name: build-docker-image
             image: gcr.io/kaniko-project/executor:debug
+            volumeMounts:
+            - mountPath: /xxx
+              name: stage-volume
             args:
               # where is your Dockerfile and the context
               - --context

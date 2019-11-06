@@ -35,7 +35,7 @@ func job(p jindraApi.JindraPipeline, buildNo int) {
 }
 
 func secret(p jindraApi.JindraPipeline, buildNo int) {
-	secret, err := jindra.RsyncSSHSecret(p, buildNo)
+	secret, err := jindra.NewRsyncSSHSecret(p, buildNo)
 	if err != nil {
 		log.Fatalf("error converting jindra pipeline config to secret for pipeline run: %s", err)
 	}
@@ -113,7 +113,7 @@ Options:
 		log.Fatalf("error reading file %s: %s", *config, err)
 	}
 
-	p, err := jindra.NewJindraPipeline(yamlData)
+	p, err := jindra.NewPipelineFromYaml(yamlData)
 	if err != nil {
 		log.Fatalf("cannot convert yaml to jindra pipeline: %s", err)
 	}

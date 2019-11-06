@@ -4,4 +4,5 @@
 /jindra-cli
 /k8s-pod-watcher
 /kubectl-podstatus
+/manager
 /pkg/jindra/jindra-cli

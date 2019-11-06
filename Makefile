@@ -24,15 +24,15 @@ local: docker-image
 	- kubectl create -f deploy/crds/jindra_v1alpha1_jindrapipeline_crd.yaml
 	OPERATOR_NAME=jindra operator-sdk up local --namespace=jindra
 
-clean:
-	- kubectl delete crd jindrapipelines.jindra.io
-	- ls deploy/*.yaml|xargs -n1 kubectl -n jindra delete -f
-	rm -rf build/_output/bin/jindra
-
 remote: docker-image
 	- kubectl create -f deploy/crds/jindra_v1alpha1_jindrapipeline_crd.yaml
 	- ls deploy/*.yaml|xargs -n1 kubectl -n jindra delete -f
 	ls deploy/*.yaml|xargs -n1 kubectl -n jindra create -f
+
+clean:
+	- kubectl delete crd jindrapipelines.jindra.io
+	- ls deploy/*.yaml|xargs -n1 kubectl -n jindra delete -f
+	rm -rf build/_output/bin/jindra
 
 deploy/crds/jindra_v1alpha1_jindrapipeline_crd.yaml: ${GO_FILES}
 	operator-sdk generate k8s

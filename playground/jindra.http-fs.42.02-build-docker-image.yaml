@@ -68,6 +68,8 @@ spec:
     name: build-docker-image
     resources: {}
     volumeMounts:
+    - mountPath: /xxx
+      name: stage-volume
     - mountPath: /jindra/resources/transit
       name: jindra-resource-transit
     - mountPath: /jindra/resources/registry-image
@@ -242,6 +244,8 @@ spec:
       readOnly: true
   restartPolicy: Never
   volumes:
+  - emptyDir: {}
+    name: stage-volume
   - emptyDir: {}
     name: jindra-tools
   - emptyDir: {}

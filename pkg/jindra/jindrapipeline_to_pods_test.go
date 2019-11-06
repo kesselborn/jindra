@@ -26,7 +26,7 @@ func getExamplePipeline(t *testing.T) jindra.JindraPipeline {
 		t.Fatalf("error reading example pipeline file: %s: %s", examplePipeline, err)
 	}
 
-	p, err := NewJindraPipeline(yamlData)
+	p, err := NewPipelineFromYaml(yamlData)
 	if err != nil {
 		t.Fatalf("cannot convert yaml to jindra pipeline: %s", err)
 	}
@@ -170,7 +170,7 @@ func TestConfigMap(t *testing.T) {
 }
 
 func TestRsyncSSHSecret(t *testing.T) {
-	secret, _ := RsyncSSHSecret(getExamplePipeline(t), 42)
+	secret, _ := NewRsyncSSHSecret(getExamplePipeline(t), 42)
 	expected := *secretFileContents(path.Join(fixtureDir, "jindra.http-fs.42.rsync-keys.yaml"), t)
 
 	// we need to cheat a little bit here, as the keys themselves will always differ
@@ -184,7 +184,7 @@ func TestRsyncSSHSecret(t *testing.T) {
 }
 
 func TestStageConfigs(t *testing.T) {
-	configs, configsErr := pipelineConfigs(getExamplePipeline(t), 42)
+	configs, configsErr := generateStagePods(getExamplePipeline(t), 42)
 
 	for i, test := range []struct {
 		got         interface{}
@@ -216,7 +216,7 @@ func TestWaitForDebugContainer(t *testing.T) {
 		}
 	}
 
-	configs, _ := pipelineConfigs(ppl, 42)
+	configs, _ := generateStagePods(ppl, 42)
 	waitForAnnotation := configs["02-build-docker-image.yaml"].ObjectMeta.Annotations[waitForAnnotationKey]
 
 	expected := "build-docker-image,jindra-debug-container"
@@ -231,7 +231,7 @@ func TestInvalidFirstContainer(t *testing.T) {
 	ppl := getExamplePipeline(t)
 	ppl.Spec.Stages[0].Annotations[firstInitContainers] = "xxxxxxxx"
 
-	_, err := pipelineConfigs(ppl, 42)
+	_, err := generateStagePods(ppl, 42)
 	expected := fmt.Errorf("error constructing init containers: defined firstInitContainer xxxxxxxx not found in pipeline definition")
 
 	if !reflect.DeepEqual(expected, err) {
