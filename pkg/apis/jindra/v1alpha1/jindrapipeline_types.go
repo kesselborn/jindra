@@ -64,6 +64,12 @@ func (ppl JindraPipeline) Validate() error {
 	for _, f := range []func() error{
 		ppl.validateTriggerHasResource,
 		ppl.validateTriggerIsInResourceOfFirstStage,
+		ppl.validateNoDuplicateResourceAnnotations,
+		ppl.validateNoDuplicateResourceNames,
+		ppl.validateResourcesExist,
+		ppl.validateServiceExist,
+		ppl.validateNoOwnerReference,
+		ppl.validateRestartPolicy,
 	} {
 		if err := f(); err != nil {
 			return err

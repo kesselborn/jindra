@@ -135,14 +135,18 @@ include() {
 run_tests() {
   if [ -n "${CONCURRENT}" ]
   then
+    local random_name=$(mktemp /tmp/.spec.sh.concurrent_log.XXXXXX)
     local _CONCURRENT=${CONCURRENT}
     __spec_sh_run_test before_all
+    printf "NOTE: in concurrent mode, logs will show up once all test of a shard are finished, i.e. it will take a while until you see logs\n" >&2
 
     local MOD=$((CONCURRENT - 1))
     while [ $MOD -ge 0 ]
     do
-      NO_HOOKS=1 CONCURRENT= SHARD=${_CONCURRENT}+${MOD} run_tests &
-      local pids="${pids} $!"
+      NO_HOOKS=1 CONCURRENT= SHARD=${_CONCURRENT}+${MOD} run_tests ${1:-$(basename $0|sed 's/\.sh$//g')}${_CONCURRENT}+${MOD}	2>&1 > ${random_name} &
+      local pid=$!
+      mv ${random_name} ${random_name}.${pid}
+      local pids="${pids} ${pid}"
       MOD=$((MOD - 1))
     done
 
@@ -151,6 +155,7 @@ run_tests() {
     do
       wait ${pid}
       errors_total=$((errors_total+$?))
+      cat ${random_name}.${pid}
     done
     __spec_sh_run_test after_all
     return ${errors_total}
