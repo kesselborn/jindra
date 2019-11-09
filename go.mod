@@ -1,6 +1,7 @@
 module github.com/kesselborn/jindra
 
 require (
+	github.com/Workiva/go-datastructures v1.0.50
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-openapi/spec v0.19.0
 	github.com/kesselborn/jindra/pkg/jindra/tools/crij v0.0.0-20191025165718-e293e4e88eb4 // indirect

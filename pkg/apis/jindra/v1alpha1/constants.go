@@ -1,6 +1,6 @@
 package v1alpha1
 
-const(
+const (
 	InResourceAnnotationKey     = "jindra.io/inputs"
 	OutResourceAnnotationKey    = "jindra.io/outputs"
 	ServicesAnnotationKey       = "jindra.io/services"
@@ -10,4 +10,5 @@ const(
 	OutResourceEnvAnnotationKey = "jindra.io/outputs-envs"
 	FirstInitContainers         = "jindra.io/first-init-containers"
 	DebugResourcesAnnotationKey = "jindra.io/debug-resources"
+	BuildNoOffsetAnnotationKey  = "jindra.io/build-no-offset"
 )

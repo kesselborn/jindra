@@ -79,6 +79,44 @@ func (ppl JindraPipeline) Validate() error {
 	return nil
 }
 
+// SetDefaults sets sane default values if not set already
+func (ppl *JindraPipeline) SetDefaults() {
+	if ppl.Spec.Final.Name == "" {
+		ppl.Spec.Final.Name = "final"
+	}
+
+	if ppl.Spec.OnError.Name == "" {
+		ppl.Spec.OnError.Name = "on-error"
+	}
+
+	if ppl.Spec.OnSuccess.Name == "" {
+		ppl.Spec.OnSuccess.Name = "on-success"
+	}
+
+	for i := 0; i < len(ppl.Spec.Resources.Triggers); i++ {
+		if ppl.Spec.Resources.Triggers[i].Schedule == "" {
+			ppl.Spec.Resources.Triggers[i].Schedule = "/5 * * * *"
+		}
+	}
+
+	if ppl.Annotations[BuildNoOffsetAnnotationKey] == "" {
+		ppl.Annotations[BuildNoOffsetAnnotationKey] = "0"
+	}
+
+	for i := 0; i < len(ppl.Spec.Stages); i++ {
+		if ppl.Spec.Stages[i].Spec.RestartPolicy == core.RestartPolicy("") {
+			ppl.Spec.Stages[i].Spec.RestartPolicy = core.RestartPolicyNever
+		}
+
+	}
+	for _, pod := range []*core.Pod{&ppl.Spec.OnSuccess, &ppl.Spec.OnError, &ppl.Spec.Final} {
+		if pod.Spec.RestartPolicy == core.RestartPolicy("") {
+			pod.Spec.RestartPolicy = core.RestartPolicyNever
+		}
+	}
+
+}
+
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // JindraPipelineList contains a list of JindraPipeline
