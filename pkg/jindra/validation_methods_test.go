@@ -151,3 +151,15 @@ func TestRestartPolicyIsNeverOrNotSet(t *testing.T) {
 		t.Fatalf("\t%2d: %-80s %s", 0, "restartPolicy must be never or empty", errMsg(t, expected.Error(), err.Error()))
 	}
 }
+
+func TestNameIsSet(t *testing.T) {
+	ppl := getExamplePipeline(t)
+	ppl.Name = ""
+
+	err := emptyErrorWrapper(ppl.Validate())
+	expected := fmt.Errorf("pipeline needs to have a name")
+
+	if !reflect.DeepEqual(expected, err) {
+		t.Fatalf("\t%2d: %-80s %s", 0, "restartPolicy must be never or empty", errMsg(t, expected.Error(), err.Error()))
+	}
+}

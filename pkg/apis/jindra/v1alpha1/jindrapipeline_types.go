@@ -62,14 +62,15 @@ type JindraPipeline struct {
 // Validate validates the correctnes of the JindraPipeline object
 func (ppl JindraPipeline) Validate() error {
 	for _, f := range []func() error{
-		ppl.validateTriggerHasResource,
-		ppl.validateTriggerIsInResourceOfFirstStage,
-		ppl.validateNoDuplicateResourceAnnotations,
-		ppl.validateNoDuplicateResourceNames,
-		ppl.validateResourcesExist,
-		ppl.validateServiceExist,
-		ppl.validateNoOwnerReference,
-		ppl.validateRestartPolicy,
+		ppl.correctOrNoRestartPolicy,
+		ppl.nameIsSet,
+		ppl.noDuplicateResourceAnnotations,
+		ppl.noDuplicateResourceNames,
+		ppl.noOwnerReference,
+		ppl.resourcesExist,
+		ppl.serviceExist,
+		ppl.triggerHasResource,
+		ppl.triggerIsInResourceOfFirstStage,
 	} {
 		if err := f(); err != nil {
 			return err

@@ -1,25 +1,14 @@
 package v1alpha1
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
 	core "k8s.io/api/core/v1"
 )
 
-func (ppl JindraPipeline) allPods() []core.Pod {
-	pods := ppl.Spec.Stages
-
-	for _, pod := range append([]core.Pod{ppl.Spec.OnSuccess}, ppl.Spec.OnError, ppl.Spec.Final) {
-		if pod.Name != "" {
-			pods = append(pods, pod)
-		}
-	}
-
-	return pods
-}
-
-func (ppl JindraPipeline) validateTriggerHasResource() error {
+func (ppl JindraPipeline) triggerHasResource() error {
 	containerNames := map[string]bool{}
 	for _, resource := range ppl.Spec.Resources.Containers {
 		containerNames[resource.Name] = true
@@ -34,7 +23,7 @@ func (ppl JindraPipeline) validateTriggerHasResource() error {
 	return nil
 }
 
-func (ppl JindraPipeline) validateTriggerIsInResourceOfFirstStage() error {
+func (ppl JindraPipeline) triggerIsInResourceOfFirstStage() error {
 	stage1InResourcesArray := strings.Split(ppl.Spec.Stages[0].Annotations[InResourceAnnotationKey], ",")
 	stage1InResources := arrayToSet(stage1InResourcesArray)
 
@@ -42,6 +31,100 @@ func (ppl JindraPipeline) validateTriggerIsInResourceOfFirstStage() error {
 		if _, ok := stage1InResources[trigger.Name]; !ok && trigger.Name != "" {
 			return fmt.Errorf("invalid trigger '%s': every trigger needs to be an input resource of the first stage", trigger.Name)
 		}
+	}
+
+	return nil
+}
+func (ppl JindraPipeline) noDuplicateResourceAnnotations() error {
+	for _, stage := range ppl.allPods() {
+		if duplicate := findDuplicate(strings.Split(stage.Annotations[InResourceAnnotationKey], ",")); duplicate != "" {
+			return fmt.Errorf("stage %s uses the input resource %s twice", stage.Name, duplicate)
+		}
+		if duplicate := findDuplicate(strings.Split(stage.Annotations[OutResourceAnnotationKey], ",")); duplicate != "" {
+			return fmt.Errorf("stage %s uses the output resource %s twice", stage.Name, duplicate)
+		}
+	}
+
+	return nil
+}
+
+func (ppl JindraPipeline) noDuplicateResourceNames() error {
+	containerNames := []string{}
+	for _, container := range ppl.Spec.Resources.Containers {
+		containerNames = append(containerNames, container.Name)
+	}
+
+	if duplicate := findDuplicate(containerNames); duplicate != "" {
+		return fmt.Errorf("resource name %s is used twice", duplicate)
+	}
+
+	return nil
+}
+
+func (ppl JindraPipeline) resourcesExist() error {
+	resourceNames := map[string]bool{"transit": true}
+
+	for _, container := range ppl.Spec.Resources.Containers {
+		resourceNames[container.Name] = true
+	}
+
+	for _, stage := range ppl.allPods() {
+		for _, resource := range strings.Split(stage.Annotations[InResourceAnnotationKey], ",") {
+			if _, ok := resourceNames[resource]; !ok && resource != "" {
+				return fmt.Errorf("input resource %s referenced in stage %s does not exist", resource, stage.Name)
+			}
+		}
+		for _, resource := range strings.Split(stage.Annotations[OutResourceAnnotationKey], ",") {
+			if _, ok := resourceNames[resource]; !ok && resource != "" {
+				return fmt.Errorf("output resource %s referenced in stage %s does not exist", resource, stage.Name)
+			}
+		}
+	}
+
+	return nil
+}
+
+func (ppl JindraPipeline) serviceExist() error {
+	for _, stage := range ppl.allPods() {
+		if services := strings.Split(stage.Annotations[ServicesAnnotationKey], ","); len(services) > 1 && services[0] != "" {
+			containers := map[string]bool{}
+			for _, container := range stage.Spec.Containers {
+				containers[container.Name] = true
+			}
+			for _, service := range services {
+				if _, ok := containers[service]; !ok {
+					return fmt.Errorf("service container %s referenced in stage %s does not exist", service, stage.Name)
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func (ppl JindraPipeline) noOwnerReference() error {
+	for _, stage := range ppl.allPods() {
+		if len(stage.OwnerReferences) > 0 {
+			return fmt.Errorf("stage %s must not have an owner reference", stage.Name)
+		}
+	}
+
+	return nil
+}
+
+func (ppl JindraPipeline) correctOrNoRestartPolicy() error {
+	for _, stage := range ppl.allPods() {
+		if stage.Spec.RestartPolicy != core.RestartPolicyNever && stage.Spec.RestartPolicy != "" {
+			return fmt.Errorf(`restartPolicy of stage %s must not be set or set to "Never"`, stage.Name)
+		}
+	}
+
+	return nil
+}
+
+func (ppl JindraPipeline) nameIsSet() error {
+	if ppl.Name == "" {
+		return errors.New("pipeline needs to have a name")
 	}
 
 	return nil
@@ -70,89 +153,14 @@ func arrayToSet(words []string) map[string]bool {
 	return set
 }
 
-func (ppl JindraPipeline) validateNoDuplicateResourceAnnotations() error {
-	for _, stage := range ppl.allPods() {
-		if duplicate := findDuplicate(strings.Split(stage.Annotations[InResourceAnnotationKey], ",")); duplicate != "" {
-			return fmt.Errorf("stage %s uses the input resource %s twice", stage.Name, duplicate)
-		}
-		if duplicate := findDuplicate(strings.Split(stage.Annotations[OutResourceAnnotationKey], ",")); duplicate != "" {
-			return fmt.Errorf("stage %s uses the output resource %s twice", stage.Name, duplicate)
-		}
-	}
+func (ppl JindraPipeline) allPods() []core.Pod {
+	pods := ppl.Spec.Stages
 
-	return nil
-}
-
-func (ppl JindraPipeline) validateNoDuplicateResourceNames() error {
-	containerNames := []string{}
-	for _, container := range ppl.Spec.Resources.Containers {
-		containerNames = append(containerNames, container.Name)
-	}
-
-	if duplicate := findDuplicate(containerNames); duplicate != "" {
-		return fmt.Errorf("resource name %s is used twice", duplicate)
-	}
-
-	return nil
-}
-
-func (ppl JindraPipeline) validateResourcesExist() error {
-	resourceNames := map[string]bool{"transit": true}
-
-	for _, container := range ppl.Spec.Resources.Containers {
-		resourceNames[container.Name] = true
-	}
-
-	for _, stage := range ppl.allPods() {
-		for _, resource := range strings.Split(stage.Annotations[InResourceAnnotationKey], ",") {
-			if _, ok := resourceNames[resource]; !ok && resource != "" {
-				return fmt.Errorf("input resource %s referenced in stage %s does not exist", resource, stage.Name)
-			}
-		}
-		for _, resource := range strings.Split(stage.Annotations[OutResourceAnnotationKey], ",") {
-			if _, ok := resourceNames[resource]; !ok && resource != "" {
-				return fmt.Errorf("output resource %s referenced in stage %s does not exist", resource, stage.Name)
-			}
+	for _, pod := range append([]core.Pod{ppl.Spec.OnSuccess}, ppl.Spec.OnError, ppl.Spec.Final) {
+		if pod.Name != "" {
+			pods = append(pods, pod)
 		}
 	}
 
-	return nil
-}
-
-func (ppl JindraPipeline) validateServiceExist() error {
-	for _, stage := range ppl.allPods() {
-		if services := strings.Split(stage.Annotations[ServicesAnnotationKey], ","); len(services) > 1 && services[0] != "" {
-			containers := map[string]bool{}
-			for _, container := range stage.Spec.Containers {
-				containers[container.Name] = true
-			}
-			for _, service := range services {
-				if _, ok := containers[service]; !ok {
-					return fmt.Errorf("service container %s referenced in stage %s does not exist", service, stage.Name)
-				}
-			}
-		}
-	}
-
-	return nil
-}
-
-func (ppl JindraPipeline) validateNoOwnerReference() error {
-	for _, stage := range ppl.allPods() {
-		if len(stage.OwnerReferences) > 0 {
-			return fmt.Errorf("stage %s must not have an owner reference", stage.Name)
-		}
-	}
-
-	return nil
-}
-
-func (ppl JindraPipeline) validateRestartPolicy() error {
-	for _, stage := range ppl.allPods() {
-		if stage.Spec.RestartPolicy != core.RestartPolicyNever && stage.Spec.RestartPolicy != "" {
-			return fmt.Errorf(`restartPolicy of stage %s must not be set or set to "Never"`, stage.Name)
-		}
-	}
-
-	return nil
+	return pods
 }
