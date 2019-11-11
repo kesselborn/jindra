@@ -158,12 +158,8 @@ func TestDefaultModifier(t *testing.T) {
 	pplExpected.Annotations[jindra.BuildNoOffsetAnnotationKey] = "0" // adjust to the default value that will get used
 	pplExpected.Spec.Final.Name = "foobar"                           // tests that given names are not overwritten
 	pplExpected.Spec.Resources.Triggers[0].Schedule = "/5 * * * *"
-	pplExpected.Spec.OnSuccess.Spec.RestartPolicy = core.RestartPolicyNever
 	pplExpected.Spec.Stages[0].Spec.RestartPolicy = core.RestartPolicyNever
 	pplExpected.Spec.Stages[1].Spec.RestartPolicy = core.RestartPolicyNever
-	pplExpected.Spec.OnSuccess.Spec.RestartPolicy = core.RestartPolicyNever
-	pplExpected.Spec.OnError.Spec.RestartPolicy = core.RestartPolicyNever
-	pplExpected.Spec.Final.Spec.RestartPolicy = core.RestartPolicyNever
 
 	delete(pplUnmodified.Annotations, jindra.BuildNoOffsetAnnotationKey)
 	pplUnmodified.Spec.Resources.Triggers[0].Schedule = ""

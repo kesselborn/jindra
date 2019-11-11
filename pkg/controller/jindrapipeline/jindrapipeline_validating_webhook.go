@@ -6,10 +6,9 @@ package jindrapipeline
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
-	jindrav1alpha1 "github.com/kesselborn/jindra/pkg/apis/jindra/v1alpha1"
+	jindra "github.com/kesselborn/jindra/pkg/apis/jindra/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
@@ -18,8 +17,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission/types"
 )
 
-var webhooklog = logf.Log.WithName("jindrapipeline-validator")
+var valLog = logf.Log.WithName("jindra-validator")
 
+// PipelineValidator validates pipeline objects
 type PipelineValidator struct {
 	client  client.Client
 	decoder types.Decoder
@@ -27,11 +27,12 @@ type PipelineValidator struct {
 
 var _ admission.Handler = &PipelineValidator{}
 
-// https://github.com/kubernetes/apimachinery/blob/master/pkg/apis/meta/v1/types.go#L506 <- dry run pods
+// Handle handles incoming requests
+// note to self: https://github.com/kubernetes/apimachinery/blob/master/pkg/apis/meta/v1/types.go#L506 <- dry run pods
 func (v *PipelineValidator) Handle(ctx context.Context, req types.Request) types.Response {
-	webhooklog.Info("validating pipeline")
+	valLog.Info("validating pipeline")
 
-	pipeline := &jindrav1alpha1.JindraPipeline{}
+	pipeline := &jindra.JindraPipeline{}
 
 	err := v.decoder.Decode(req, pipeline)
 	if err != nil {
@@ -45,19 +46,15 @@ func (v *PipelineValidator) Handle(ctx context.Context, req types.Request) types
 	return admission.ValidationResponse(allowed, reason)
 }
 
-func (v *PipelineValidator) validatePipelineFn(ctx context.Context, pipeline *jindrav1alpha1.JindraPipeline) (bool, string, error) {
-	key := "jindra-webhook-test"
-	anno, found := pipeline.Annotations[key]
-	switch {
-	case !found:
-		return found, fmt.Sprintf("failed to find annotation with key: %q", key), nil
-	case found && anno == "foo":
-		return found, "", nil
-	case found && anno != "foo":
-		return false,
-			fmt.Sprintf("the value associate with key %q is expected to be %q, but got %q", key, "foo", anno), nil
+func (v *PipelineValidator) validatePipelineFn(ctx context.Context, pipeline *jindra.JindraPipeline) (bool, string, error) {
+	valLog.Info("validating pipeline", "pipeline", pipeline.Name)
+	reason := pipeline.Validate()
+
+	if reason == nil {
+		return true, "", nil
 	}
-	return false, "", nil
+
+	return false, reason.Error(), nil
 }
 
 // podValidator implements inject.Client.

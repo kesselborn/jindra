@@ -1,7 +1,7 @@
 apiVersion: jindra.io/v1alpha1
 kind: JindraPipeline
 metadata:
-  name: transit-test
+  name: transit-test2
 spec:
   stages:
     - metadata:

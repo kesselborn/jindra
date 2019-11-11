@@ -5,7 +5,7 @@ metadata:
 subjects:
 - kind: ServiceAccount
   name: jindra
-  namespace: jindra
+  namespace: jindra-tests-11047
 roleRef:
   kind: ClusterRole
   name: jindra

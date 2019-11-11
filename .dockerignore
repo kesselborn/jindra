@@ -1,4 +1,4 @@
 /.git
-/build
+/build/_output/bin/jindra-local
 /crij
 /pkg/jindra/jindra-cli

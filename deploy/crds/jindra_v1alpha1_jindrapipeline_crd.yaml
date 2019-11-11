@@ -62,11 +62,7 @@ spec:
                 type: object
               type: array
           required:
-          - resources
           - stages
-          - onSuccess
-          - onError
-          - final
           type: object
         status:
           properties:

@@ -77,6 +77,7 @@ func main() {
 		log.Error(err, "Failed to get watch namespace")
 		os.Exit(1)
 	}
+	log.Info("watching namespace", "namespace", namespace)
 
 	// Get a config to talk to the apiserver
 	cfg, err := config.GetConfig()
@@ -147,7 +148,7 @@ func main() {
 	}
 
 	validatingWebhook, err := builder.NewWebhookBuilder().
-		Name("validating.k8s.io").
+		Name("validating.jindra.io").
 		Validating().
 		Operations(admissionregistrationv1beta1.Create, admissionregistrationv1beta1.Update).
 		WithManager(mgr).
@@ -155,19 +156,32 @@ func main() {
 		Handlers(&jindrapipeline.PipelineValidator{}).
 		Build()
 	if err != nil {
-		log.Error(err, "unable to setup validating webhook")
+		log.Error(err, "unable to setup jindra validating webhook")
+		os.Exit(1)
+	}
+
+	mutatingWebhook, err := builder.NewWebhookBuilder().
+		Name("mutating.jindra.io").
+		Mutating().
+		Operations(admissionregistrationv1beta1.Create, admissionregistrationv1beta1.Update).
+		WithManager(mgr).
+		ForType(&jindrav1alpha1.JindraPipeline{}).
+		Handlers(&jindrapipeline.PipelineMutator{}).
+		Build()
+	if err != nil {
+		log.Error(err, "unable to setup jindra mutating webhook")
 		os.Exit(1)
 	}
 
 	log.Info("setting up webhook server")
-	xxx := false
+	disableWebhookConfigInstaller := false
 	as, err := webhook.NewServer("jindra-pipeline-admission-server", mgr, webhook.ServerOptions{
 		Port:                          9876,
 		CertDir:                       "/tmp/cert",
-		DisableWebhookConfigInstaller: &xxx,
+		DisableWebhookConfigInstaller: &disableWebhookConfigInstaller,
 		BootstrapOptions: &webhook.BootstrapOptions{
 			Service: &webhook.Service{
-				Namespace: "jindra",
+				Namespace: namespace,
 				Name:      "jindra-admission-server-service",
 				// Selectors should select the pods that runs this webhook server.
 				Selectors: map[string]string{
@@ -183,7 +197,7 @@ func main() {
 	}
 
 	log.Info("registering webhooks to the webhook server")
-	err = as.Register(validatingWebhook)
+	err = as.Register(validatingWebhook, mutatingWebhook)
 	if err != nil {
 		log.Error(err, "unable to register webhooks in the admission server")
 		os.Exit(1)

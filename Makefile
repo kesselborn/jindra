@@ -1,5 +1,5 @@
 DOCKER_IMAGE=jindra/jindra
-GO_FILES=${shell find pkg/controller -name "*.go"} ${shell find pkg/apis -name "*.go"}
+GO_FILES=${shell find pkg/controller -name "*.go"} ${shell find pkg/apis -name "*.go"} ${shell find cmd/ -name "*.go"}
 PLAYGROUND_DIR=playground
 
 all: jindra-cli k8s-pod-watcher kubectl-podstatus crij build/_output/bin/jindra
@@ -20,14 +20,17 @@ test:
 	cd pkg/jindra/tools/crij && go test -v 
 	cd pkg/jindra && go test -timeout 30s -v || { test $$? = 1 && code -d /tmp/expected /tmp/got; }
 
-local: docker-image
-	- kubectl create -f deploy/crds/jindra_v1alpha1_jindrapipeline_crd.yaml
+local: jindra-controller-image
+	- kubectl -n $${NAMESPACE:?please set \$$NAMESPACE env var} create -f deploy/crds/jindra_v1alpha1_jindrapipeline_crd.yaml
 	OPERATOR_NAME=jindra operator-sdk up local --namespace=jindra
 
-remote: docker-image
-	- kubectl create -f deploy/crds/jindra_v1alpha1_jindrapipeline_crd.yaml
-	- ls deploy/*.yaml|xargs -n1 kubectl -n jindra delete -f
-	ls deploy/*.yaml|xargs -n1 kubectl -n jindra create -f
+remote: jindra-controller-image
+	test -n "$${NAMESPACE:?please set \$$NAMESPACE env var}"
+	- test -z "${NO_DELETE}" && ls deploy/*.yaml|xargs -n1 kubectl -n ${NAMESPACE} delete -f || true
+
+	- kubectl -n ${NAMESPACE} apply  -f deploy/crds/jindra_v1alpha1_jindrapipeline_crd.yaml
+	sed -i "" 's|namespace: .*$$|namespace: ${NAMESPACE}|g' deploy/cluster_role_binding.yaml
+	ls deploy/*.yaml  |xargs -n1 kubectl -n ${NAMESPACE} apply  --wait -f
 
 clean:
 	- kubectl delete crd jindrapipelines.jindra.io
@@ -43,7 +46,7 @@ deploy/crds/jindra_v1alpha1_jindrapipeline_crd.yaml: ${GO_FILES}
 build/_output/bin/jindra: deploy/crds/*.yaml ${GO_FILES}
 	operator-sdk build ${DOCKER_IMAGE}
 
-docker-image: build/_output/bin/jindra
+jindra-controller-image: build/_output/bin/jindra
 	docker push jindra/jindra
 	sed -i "" 's|REPLACE_IMAGE|${DOCKER_IMAGE}|g' deploy/operator.yaml
 	touch $@

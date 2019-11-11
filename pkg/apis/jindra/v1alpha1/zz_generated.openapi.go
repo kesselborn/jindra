@@ -166,7 +166,7 @@ func schema_pkg_apis_jindra_v1alpha1_JindraPipelineSpec(ref common.ReferenceCall
 						},
 					},
 				},
-				Required: []string{"resources", "stages", "onSuccess", "onError", "final"},
+				Required: []string{"stages"},
 			},
 		},
 		Dependencies: []string{
