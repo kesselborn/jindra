@@ -11,6 +11,9 @@ it_should_reject_invalid_pipeline() {
 it_should_reject_invalid_stage_pod() {
   SKIP_TEST
 }
+it_should_reject_invalid_on_success_pod() {
+  SKIP_TEST
+}
 
 it_should_set_default_values() {
   assert_true "${kubectl} apply --wait -f internal-modifications-test.yaml"
