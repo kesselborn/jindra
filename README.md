@@ -60,3 +60,8 @@ Resource outputs are saved in resource folder at:
 - debug annotation
 
 See: https://github.com/concourse/concourse/wiki/Resource-Types
+
+## Notes to self
+### Operator update
+export GOROOT=$(go env GOROOT)
+
