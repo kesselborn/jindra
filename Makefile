@@ -21,14 +21,14 @@ test:
 	cd pkg/jindra && go test -timeout 30s -v || { test $$? = 1 && code -d /tmp/expected /tmp/got; }
 
 local: jindra-controller-image
-	- kubectl -n $${NAMESPACE:?please set \$$NAMESPACE env var} create -f deploy/crds/jindra_v1alpha1_jindrapipeline_crd.yaml
-	OPERATOR_NAME=jindra operator-sdk up local --namespace=jindra
+	- kubectl -n $${NAMESPACE:?please set \$$NAMESPACE env var} create -f deploy/crds/jindra.io_jindrapipelines_crd.yaml
+	ENABLE_WEBHOOKS=false OPERATOR_NAME=jindra operator-sdk up local --namespace=jindra
 
 remote: jindra-controller-image
 	test -n "$${NAMESPACE:?please set \$$NAMESPACE env var}"
 	- test -z "${NO_DELETE}" && ls deploy/*.yaml|xargs -n1 kubectl -n ${NAMESPACE} delete -f || true
 
-	- kubectl -n ${NAMESPACE} apply  -f deploy/crds/jindra_v1alpha1_jindrapipeline_crd.yaml
+	- kubectl -n ${NAMESPACE} apply  -f deploy/crds/jindra.io_jindrapipelines_crd.yaml
 	sed -i "" 's|namespace: .*$$|namespace: ${NAMESPACE}|g' deploy/cluster_role_binding.yaml
 	ls deploy/*.yaml  |xargs -n1 kubectl -n ${NAMESPACE} apply  --wait -f
 
@@ -37,13 +37,14 @@ clean:
 	- ls deploy/*.yaml|xargs -n1 kubectl -n jindra delete -f
 	rm -rf build/_output/bin/jindra
 
-deploy/crds/jindra_v1alpha1_jindrapipeline_crd.yaml: ${GO_FILES}
+deploy/crds/jindra.io_jindrapipelines_crd.yaml: ${GO_FILES}
 	operator-sdk generate k8s
 	operator-sdk generate openapi
 	- kubectl delete crd jindrapipelines.jindra.io
-	kubectl create -f deploy/crds/jindra_v1alpha1_jindrapipeline_crd.yaml
+	kubectl create -f deploy/crds/jindra.io_jindrapipelines_crd.yaml
 
 build/_output/bin/jindra: deploy/crds/*.yaml ${GO_FILES}
+	go mod vendor
 	operator-sdk build ${DOCKER_IMAGE}
 
 jindra-controller-image: build/_output/bin/jindra

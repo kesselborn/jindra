@@ -12,9 +12,9 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/kesselborn/jindra/pkg/apis"
-	jindrav1alpha1 "github.com/kesselborn/jindra/pkg/apis/jindra/v1alpha1"
 	"github.com/kesselborn/jindra/pkg/controller"
 	"github.com/kesselborn/jindra/pkg/controller/jindrapipeline"
+	"github.com/kesselborn/jindra/version"
 
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	kubemetrics "github.com/operator-framework/operator-sdk/pkg/kube-metrics"
@@ -24,15 +24,13 @@ import (
 	"github.com/operator-framework/operator-sdk/pkg/restmapper"
 	sdkVersion "github.com/operator-framework/operator-sdk/version"
 	"github.com/spf13/pflag"
-	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
-	"sigs.k8s.io/controller-runtime/pkg/runtime/signals"
+	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
-	"sigs.k8s.io/controller-runtime/pkg/webhook/admission/builder"
 )
 
 // Change below variables to serve metrics on different host or port.
@@ -40,13 +38,16 @@ var (
 	metricsHost               = "0.0.0.0"
 	metricsPort         int32 = 8383
 	operatorMetricsPort int32 = 8686
+	webhookPort               = 8443
 )
 var log = logf.Log.WithName("cmd")
 
 func printVersion() {
+	log.Info(fmt.Sprintf("Operator Version: %s", version.Version))
 	log.Info(fmt.Sprintf("Go Version: %s", runtime.Version()))
 	log.Info(fmt.Sprintf("Go OS/Arch: %s/%s", runtime.GOOS, runtime.GOARCH))
 	log.Info(fmt.Sprintf("Version of operator-sdk: %v", sdkVersion.Version))
+	log.Info(fmt.Sprintf("Listening on port: %d", webhookPort))
 }
 
 func main() {
@@ -77,7 +78,6 @@ func main() {
 		log.Error(err, "Failed to get watch namespace")
 		os.Exit(1)
 	}
-	log.Info("watching namespace", "namespace", namespace)
 
 	// Get a config to talk to the apiserver
 	cfg, err := config.GetConfig()
@@ -99,6 +99,7 @@ func main() {
 		Namespace:          namespace,
 		MapperProvider:     restmapper.NewDynamicRESTMapper,
 		MetricsBindAddress: fmt.Sprintf("%s:%d", metricsHost, metricsPort),
+		Port:               webhookPort,
 	})
 	if err != nil {
 		log.Error(err, "")
@@ -118,6 +119,14 @@ func main() {
 		log.Error(err, "")
 		os.Exit(1)
 	}
+
+	// Setup webhooks
+	log.Info("setting up webhook server")
+	hookServer := mgr.GetWebhookServer()
+
+	log.Info("registering webhooks to the webhook server")
+	// hookServer.Register("/mutate-v1alpha1-jindrapipeline", &webhook.Admission{Handler: &jindrapipeline.PipelineMutator{}})
+	hookServer.Register("/validate-v1alpha1-jindrapipeline", &webhook.Admission{Handler: &jindrapipeline.PipelineValidator{}})
 
 	if err = serveCRMetrics(cfg); err != nil {
 		log.Info("Could not generate and serve custom resource metrics", "error", err.Error())
@@ -145,62 +154,6 @@ func main() {
 		if err == metrics.ErrServiceMonitorNotPresent {
 			log.Info("Install prometheus-operator in your cluster to create ServiceMonitor objects", "error", err.Error())
 		}
-	}
-
-	validatingWebhook, err := builder.NewWebhookBuilder().
-		Name("validating.jindra.io").
-		Validating().
-		Operations(admissionregistrationv1beta1.Create, admissionregistrationv1beta1.Update).
-		WithManager(mgr).
-		ForType(&jindrav1alpha1.JindraPipeline{}).
-		Handlers(&jindrapipeline.PipelineValidator{}).
-		Build()
-	if err != nil {
-		log.Error(err, "unable to setup jindra validating webhook")
-		os.Exit(1)
-	}
-
-	mutatingWebhook, err := builder.NewWebhookBuilder().
-		Name("mutating.jindra.io").
-		Mutating().
-		Operations(admissionregistrationv1beta1.Create, admissionregistrationv1beta1.Update).
-		WithManager(mgr).
-		ForType(&jindrav1alpha1.JindraPipeline{}).
-		Handlers(&jindrapipeline.PipelineMutator{}).
-		Build()
-	if err != nil {
-		log.Error(err, "unable to setup jindra mutating webhook")
-		os.Exit(1)
-	}
-
-	log.Info("setting up webhook server")
-	disableWebhookConfigInstaller := false
-	as, err := webhook.NewServer("jindra-pipeline-admission-server", mgr, webhook.ServerOptions{
-		Port:                          9876,
-		CertDir:                       "/tmp/cert",
-		DisableWebhookConfigInstaller: &disableWebhookConfigInstaller,
-		BootstrapOptions: &webhook.BootstrapOptions{
-			Service: &webhook.Service{
-				Namespace: namespace,
-				Name:      "jindra-admission-server-service",
-				// Selectors should select the pods that runs this webhook server.
-				Selectors: map[string]string{
-					"jindra-component": "operator",
-				},
-			},
-		},
-	})
-
-	if err != nil {
-		log.Error(err, "unable to create a new webhook server")
-		os.Exit(1)
-	}
-
-	log.Info("registering webhooks to the webhook server")
-	err = as.Register(validatingWebhook, mutatingWebhook)
-	if err != nil {
-		log.Error(err, "unable to register webhooks in the admission server")
-		os.Exit(1)
 	}
 
 	log.Info("Starting the Cmd.")

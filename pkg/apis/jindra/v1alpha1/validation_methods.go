@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	core "k8s.io/api/core/v1"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var valLog = logf.Log.WithName("jindra-validator")

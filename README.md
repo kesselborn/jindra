@@ -62,6 +62,20 @@ Resource outputs are saved in resource folder at:
 See: https://github.com/concourse/concourse/wiki/Resource-Types
 
 ## Notes to self
+
 ### Operator update
-export GOROOT=$(go env GOROOT)
+
+    git checkout -b operator-update
+    # check that no uncommitted files are in repo
+    JINDRA_DIR=${PWD}
+    rm -rf build deploy cmd pkg vendor go.sum go.mod
+    cd $(mktemp -d)
+    export GOROOT=$(go env GOROOT)
+    operator-sdk new jindra --repo=github.com/kesselborn/jindra --vendor
+    rm .gitignore
+    operator-sdk add api --api-version=jindra.io/v1alpha1 --kind=JindraPipeline
+    operator-sdk generate openapi
+    operator-sdk add controller --api-version=jindra.io/v1alpha1 --kind=JindraPipeline
+    go mod vendor
+    cp -a *  ${JINDRA_DIR}
 

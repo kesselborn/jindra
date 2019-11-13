@@ -13,13 +13,27 @@ spec:
         name: jindra
         jindra-component: operator
     spec:
+      volumes:
+        - name: certs
+          secret:
+            secretName: jindra-webhooks.svc
+            items:
+              - key: cert.pem
+                path: tls.crt
+              - key: key.pem
+                path: tls.key
+
+
       serviceAccountName: jindra
       containers:
         - name: jindra
           # Replace this with the built image name
           image: jindra/jindra
-          command:
-          - jindra
+          volumeMounts:
+            - name: certs
+              mountPath: /tmp/k8s-webhook-server/serving-certs
+          command: #["sh", "-c", "sleep 3600"]
+            - jindra
           imagePullPolicy: Always
           env:
             - name: WATCH_NAMESPACE

@@ -41,7 +41,7 @@ func (in *JindraPipeline) DeepCopyObject() runtime.Object {
 func (in *JindraPipelineList) DeepCopyInto(out *JindraPipelineList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]JindraPipeline, len(*in))

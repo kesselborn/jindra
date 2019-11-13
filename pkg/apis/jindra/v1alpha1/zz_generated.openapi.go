@@ -24,6 +24,7 @@ func schema_pkg_apis_jindra_v1alpha1_JindraPipeline(ref common.ReferenceCallback
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "JindraPipeline is the Schema for the jindrapipelines API",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -67,6 +68,7 @@ func schema_pkg_apis_jindra_v1alpha1_JindraPipelineResources(ref common.Referenc
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "JindraPipelineResources defines a pipeline resources for new versions should be done",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"triggers": {
 						SchemaProps: spec.SchemaProps{
@@ -106,6 +108,7 @@ func schema_pkg_apis_jindra_v1alpha1_JindraPipelineResourcesTrigger(ref common.R
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "JindraPipelineResourcesTrigger defines a pipeline trigger and the cron schedule when the checks for new versions should be done",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"name": {
 						SchemaProps: spec.SchemaProps{
@@ -123,7 +126,6 @@ func schema_pkg_apis_jindra_v1alpha1_JindraPipelineResourcesTrigger(ref common.R
 				Required: []string{"name", "schedule"},
 			},
 		},
-		Dependencies: []string{},
 	}
 }
 
@@ -132,6 +134,7 @@ func schema_pkg_apis_jindra_v1alpha1_JindraPipelineSpec(ref common.ReferenceCall
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "JindraPipelineSpec defines the desired state of JindraPipeline",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"resources": {
 						SchemaProps: spec.SchemaProps{
@@ -179,6 +182,7 @@ func schema_pkg_apis_jindra_v1alpha1_JindraPipelineStatus(ref common.ReferenceCa
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "JindraPipelineStatus defines the observed state of JindraPipeline",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"buildNo": {
 						SchemaProps: spec.SchemaProps{
@@ -190,6 +194,5 @@ func schema_pkg_apis_jindra_v1alpha1_JindraPipelineStatus(ref common.ReferenceCa
 				Required: []string{"buildNo"},
 			},
 		},
-		Dependencies: []string{},
 	}
 }
