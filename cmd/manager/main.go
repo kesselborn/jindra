@@ -13,9 +13,10 @@ import (
 
 	"github.com/kesselborn/jindra/pkg/apis"
 	"github.com/kesselborn/jindra/pkg/controller"
-	"github.com/kesselborn/jindra/pkg/controller/jindrapipeline"
+	//	"github.com/kesselborn/jindra/pkg/controller/jindrapipeline"
 	"github.com/kesselborn/jindra/version"
 
+	jindrav1alpha1 "github.com/kesselborn/jindra/pkg/apis/jindra/v1alpha1"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	kubemetrics "github.com/operator-framework/operator-sdk/pkg/kube-metrics"
 	"github.com/operator-framework/operator-sdk/pkg/leader"
@@ -30,7 +31,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	//	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
 // Change below variables to serve metrics on different host or port.
@@ -122,11 +123,11 @@ func main() {
 
 	// Setup webhooks
 	log.Info("setting up webhook server")
-	hookServer := mgr.GetWebhookServer()
+	// hookServer := mgr.GetWebhookServer()
 
 	log.Info("registering webhooks to the webhook server")
 	// hookServer.Register("/mutate-v1alpha1-jindrapipeline", &webhook.Admission{Handler: &jindrapipeline.PipelineMutator{}})
-	hookServer.Register("/validate-v1alpha1-jindrapipeline", &webhook.Admission{Handler: &jindrapipeline.PipelineValidator{}})
+	// hookServer.Register("/validate-v1alpha1-jindrapipeline", &webhook.Admission{Handler: &jindrapipeline.PipelineValidator{}})
 
 	if err = serveCRMetrics(cfg); err != nil {
 		log.Info("Could not generate and serve custom resource metrics", "error", err.Error())
@@ -142,6 +143,13 @@ func main() {
 	if err != nil {
 		log.Info("Could not create metrics Service", "error", err.Error())
 	}
+
+	if err = (&jindrav1alpha1.JindraPipeline{}).SetupWebhookWithManager(mgr); err != nil {
+		log.Error(err, "unable to create webhook", "webhook", "jindra")
+		os.Exit(1)
+	}
+	// +kubebuilder:scaffold:builder
+	log.Info("modifying webhook registered")
 
 	// CreateServiceMonitors will automatically create the prometheus-operator ServiceMonitor resources
 	// necessary to configure Prometheus to scrape metrics from this operator.

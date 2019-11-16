@@ -28,7 +28,8 @@ remote: jindra-controller-image
 	test -n "$${NAMESPACE:?please set \$$NAMESPACE env var}"
 	- test -z "${NO_DELETE}" && ls deploy/*.yaml|xargs -n1 kubectl -n ${NAMESPACE} delete -f || true
 
-	- kubectl -n ${NAMESPACE} apply  -f deploy/crds/jindra.io_jindrapipelines_crd.yaml
+	- kubectl -n ${NAMESPACE} replace -f deploy/crds/jindra.io_jindrapipelines_crd.yaml || \
+		kubectl -n ${NAMESPACE} create  -f deploy/crds/jindra.io_jindrapipelines_crd.yaml
 	sed -i "" 's|namespace: .*$$|namespace: ${NAMESPACE}|g' deploy/cluster_role_binding.yaml
 	ls deploy/*.yaml  |xargs -n1 kubectl -n ${NAMESPACE} apply  --wait -f
 
@@ -43,7 +44,7 @@ deploy/crds/jindra.io_jindrapipelines_crd.yaml: ${GO_FILES}
 	- kubectl delete crd jindrapipelines.jindra.io
 	kubectl create -f deploy/crds/jindra.io_jindrapipelines_crd.yaml
 
-build/_output/bin/jindra: deploy/crds/*.yaml ${GO_FILES}
+build/_output/bin/jindra: deploy/crds/jindra.io_jindrapipelines_crd.yaml deploy/crds/*.yaml ${GO_FILES}
 	go mod vendor
 	operator-sdk build ${DOCKER_IMAGE}
 

@@ -12,16 +12,16 @@ import (
 
 var log = logf.Log.WithName("jindra-resource")
 
-func (r *JindraPipeline) SetupWebhookWithManager(mgr ctrl.Manager) error {
+func (ppl *JindraPipeline) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	log.Info("SetupWebhookWithManager called")
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(r).
+		For(ppl).
 		Complete()
 }
 
 var _ webhook.Defaulter = &JindraPipeline{}
 
-// +kubebuilder:webhook:path=/mutate-v1alpha1-jindrapipeline,mutating=true,failurePolicy=fail,groups="",resources=jindrapipeline,verbs=create;update,versions=v1alpha1,name=mjppl.jindra.io
+// +kubebuilder:webhook:failurePolicy=fail,groups=jindra.io,mutating=true,name=mjppl.jindra.io,path=/mutate-v1alpha1-jindrapipeline,resources=jindrapipeline,verbs=create;update,versions=v1alpha1
 func (ppl *JindraPipeline) Default() {
 	modifiedItems := []interface{}{}
 	// only set name if final is actually set (annotations or containers are set)

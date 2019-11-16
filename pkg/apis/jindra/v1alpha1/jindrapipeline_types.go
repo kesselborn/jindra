@@ -20,18 +20,21 @@ type JindraPipelineResourcesTrigger struct {
 // for new versions should be done
 // +k8s:openapi-gen=true
 type JindraPipelineResources struct {
-	Triggers   []JindraPipelineResourcesTrigger `json:"triggers"`
-	Containers []core.Container                 `json:"containers"`
+	// +listType=set
+	Triggers []JindraPipelineResourcesTrigger `json:"triggers"`
+	// +listType=set
+	Containers []core.Container `json:"containers"`
 }
 
 // JindraPipelineSpec defines the desired state of JindraPipeline
 // +k8s:openapi-gen=true
 type JindraPipelineSpec struct {
 	Resources JindraPipelineResources `json:"resources,omitempty"`
-	Stages    []core.Pod              `json:"stages"`
-	OnSuccess core.Pod                `json:"onSuccess,omitempty"`
-	OnError   core.Pod                `json:"onError,omitempty"`
-	Final     core.Pod                `json:"final,omitempty"`
+	// +listType=set
+	Stages    []core.Pod `json:"stages"`
+	OnSuccess core.Pod   `json:"onSuccess,omitempty"`
+	OnError   core.Pod   `json:"onError,omitempty"`
+	Final     core.Pod   `json:"final,omitempty"`
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html

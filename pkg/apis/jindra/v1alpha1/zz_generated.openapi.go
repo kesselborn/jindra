@@ -71,6 +71,11 @@ func schema_pkg_apis_jindra_v1alpha1_JindraPipelineResources(ref common.Referenc
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"triggers": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "set",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"array"},
 							Items: &spec.SchemaOrArray{
@@ -83,6 +88,11 @@ func schema_pkg_apis_jindra_v1alpha1_JindraPipelineResources(ref common.Referenc
 						},
 					},
 					"containers": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "set",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"array"},
 							Items: &spec.SchemaOrArray{
@@ -142,6 +152,11 @@ func schema_pkg_apis_jindra_v1alpha1_JindraPipelineSpec(ref common.ReferenceCall
 						},
 					},
 					"stages": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "set",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"array"},
 							Items: &spec.SchemaOrArray{
