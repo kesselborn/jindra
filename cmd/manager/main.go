@@ -13,6 +13,7 @@ import (
 
 	"github.com/kesselborn/jindra/pkg/apis"
 	"github.com/kesselborn/jindra/pkg/controller"
+
 	//	"github.com/kesselborn/jindra/pkg/controller/jindrapipeline"
 	"github.com/kesselborn/jindra/version"
 
@@ -123,11 +124,11 @@ func main() {
 
 	// Setup webhooks
 	log.Info("setting up webhook server")
-	// hookServer := mgr.GetWebhookServer()
+	//hookServer := mgr.GetWebhookServer()
 
 	log.Info("registering webhooks to the webhook server")
-	// hookServer.Register("/mutate-v1alpha1-jindrapipeline", &webhook.Admission{Handler: &jindrapipeline.PipelineMutator{}})
-	// hookServer.Register("/validate-v1alpha1-jindrapipeline", &webhook.Admission{Handler: &jindrapipeline.PipelineValidator{}})
+	//hookServer.Register("/mutate-v1alpha1-jindrapipeline", &webhook.Admission{Handler: &jindrapipeline.PipelineMutator{}})
+	//hookServer.Register("/validate-v1alpha1-jindrapipeline", &webhook.Admission{Handler: &jindrapipeline.PipelineValidator{}})
 
 	if err = serveCRMetrics(cfg); err != nil {
 		log.Info("Could not generate and serve custom resource metrics", "error", err.Error())

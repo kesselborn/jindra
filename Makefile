@@ -41,6 +41,7 @@ clean:
 deploy/crds/jindra.io_jindrapipelines_crd.yaml: ${GO_FILES}
 	operator-sdk generate k8s
 	operator-sdk generate openapi
+	controller-gen +webhook paths=./...
 	- kubectl delete crd jindrapipelines.jindra.io
 	kubectl create -f deploy/crds/jindra.io_jindrapipelines_crd.yaml
 

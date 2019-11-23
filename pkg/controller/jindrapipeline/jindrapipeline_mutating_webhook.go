@@ -29,7 +29,7 @@ import (
 
 var mutLog = logf.Log.WithName("jindra-mutator")
 
-// +kubebuilder:webhook:path=/mutate-v1alpha1-jindrapipeline,mutating=true,failurePolicy=fail,groups="",resources=jindrapipeline,verbs=create;update,versions=v1alpha1,name=mjppl.jindra.io
+// +kuXXbebuilder:webhook:path=/mutate-v1alpha1-jindrapipeline,mutating=true,failurePolicy=fail,groups="",resources=jindrapipeline,verbs=create;update,versions=v1alpha1,name=mjppl.jindra.io
 
 // PipelineMutator sets default values for pipeline objects
 type PipelineMutator struct {
