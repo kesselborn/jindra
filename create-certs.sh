@@ -1,7 +1,7 @@
 #!/bin/bash
 
-test -n "${SERVICE_NAME:?please set \$SERVICE_NAME}"
-test -n "${NAMESPACE:?please set \$NAMESPACE}"
+test -n "${SERVICE_NAME:?}"
+test -n "${NAMESPACE:?}"
 
 TEMP_DIRECTORY=$(mktemp -d)
 echo "creating certs in directory ${TEMP_DIRECTORY}"

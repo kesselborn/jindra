@@ -1,6 +1,7 @@
 DOCKER_IMAGE=jindra/jindra
 GO_FILES=${shell find pkg/controller -name "*.go"} ${shell find pkg/apis -name "*.go"} ${shell find cmd/ -name "*.go"}
 PLAYGROUND_DIR=playground
+CRD=deploy/crds/jindra.io_jindrapipelines.yaml
 
 all: jindra-cli k8s-pod-watcher kubectl-podstatus crij build/_output/bin/jindra
 
@@ -21,15 +22,15 @@ test:
 	cd pkg/jindra && go test -timeout 30s -v || { test $$? = 1 && code -d /tmp/expected /tmp/got; }
 
 local: jindra-controller-image
-	- kubectl -n $${NAMESPACE:?please set \$$NAMESPACE env var} create -f deploy/crds/jindra.io_jindrapipelines_crd.yaml
+	- kubectl -n $${NAMESPACE:?} create -f ${CRD}
 	ENABLE_WEBHOOKS=false OPERATOR_NAME=jindra operator-sdk up local --namespace=jindra
 
 remote: jindra-controller-image
-	test -n "$${NAMESPACE:?please set \$$NAMESPACE env var}"
+	test -n "$${NAMESPACE:?}"
 	- test -z "${NO_DELETE}" && ls deploy/*.yaml|xargs -n1 kubectl -n ${NAMESPACE} delete -f || true
 
-	- kubectl -n ${NAMESPACE} replace -f deploy/crds/jindra.io_jindrapipelines_crd.yaml || \
-		kubectl -n ${NAMESPACE} create  -f deploy/crds/jindra.io_jindrapipelines_crd.yaml
+	- kubectl -n ${NAMESPACE} replace -f ${CRD} || \
+		kubectl -n ${NAMESPACE} create  -f ${CRD}
 	sed -i "" 's|namespace: .*$$|namespace: ${NAMESPACE}|g' deploy/cluster_role_binding.yaml
 	ls deploy/*.yaml  |xargs -n1 kubectl -n ${NAMESPACE} apply  --wait -f
 
@@ -38,14 +39,15 @@ clean:
 	- ls deploy/*.yaml|xargs -n1 kubectl -n jindra delete -f
 	rm -rf build/_output/bin/jindra
 
-deploy/crds/jindra.io_jindrapipelines_crd.yaml: ${GO_FILES}
-	operator-sdk generate k8s
-	operator-sdk generate openapi
-	controller-gen +webhook paths=./...
+${CRD}: ${GO_FILES}
+	controller-gen +webhook paths=./... output:webhook:dir=deploy output:stdout && mv deploy/manifests.yaml deploy/webhook-manifests.yaml
+	controller-gen +object paths=./...
+	controller-gen rbac:roleName=jindra-operator crd paths=./pkg/apis/jindra/v1alpha1/... output:crd:dir=deploy/crds/ output:stdout
+	controller-gen schemapatch:manifests=./deploy/crds output:dir=./deploy/crds paths=./pkg/apis/jindra/v1alpha1/
 	- kubectl delete crd jindrapipelines.jindra.io
-	kubectl create -f deploy/crds/jindra.io_jindrapipelines_crd.yaml
+	kubectl create -f $@
 
-build/_output/bin/jindra: deploy/crds/jindra.io_jindrapipelines_crd.yaml deploy/crds/*.yaml ${GO_FILES}
+build/_output/bin/jindra: ${CRD} deploy/crds/*.yaml ${GO_FILES}
 	go mod vendor
 	operator-sdk build ${DOCKER_IMAGE}
 

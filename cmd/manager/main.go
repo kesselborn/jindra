@@ -124,7 +124,7 @@ func main() {
 
 	// Setup webhooks
 	log.Info("setting up webhook server")
-	//hookServer := mgr.GetWebhookServer()
+	hookServer := mgr.GetWebhookServer()
 
 	log.Info("registering webhooks to the webhook server")
 	//hookServer.Register("/mutate-v1alpha1-jindrapipeline", &webhook.Admission{Handler: &jindrapipeline.PipelineMutator{}})

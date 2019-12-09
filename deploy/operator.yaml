@@ -16,7 +16,7 @@ spec:
       volumes:
         - name: certs
           secret:
-            secretName: jindra-webhooks.svc
+            secretName: jindra-webhook-service.svc
             items:
               - key: cert.pem
                 path: tls.crt
@@ -34,6 +34,7 @@ spec:
               mountPath: /tmp/k8s-webhook-server/serving-certs
           command: #["sh", "-c", "sleep 3600"]
             - jindra
+            - --zap-devel
           imagePullPolicy: Always
           env:
             - name: WATCH_NAMESPACE
