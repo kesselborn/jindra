@@ -1,0 +1,7 @@
+version: "2"
+domain: jindra.io
+repo: github.com/kesselborn/jindra
+resources:
+- group: ci
+  version: v1alpha1
+  kind: Pipeline

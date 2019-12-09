@@ -1,0 +1,33 @@
+#!/bin/bash -x
+NAME=jindra
+DOMAIN=${NAME}.io
+VERSION=v1alpha1
+GROUP=ci
+TYPE=Pipeline
+
+test -e go.mod || { go mod init github.com/kesselborn/${NAME} && git add go.mod; git commit -m "Go init project" go.mod; }
+
+if [ ! -e Makefile ]
+then
+  kubebuilder init --domain ${DOMAIN}
+  cat<<EOF > .gitignore
+!vendor/**/zz_generated.*
+bin
+EOF
+  git add .
+  git commit -m "Initialize kubebuilder project"
+fi
+
+if [ ! -e api ]
+then
+  kubebuilder create api --group ${GROUP} --version ${VERSION} --kind ${TYPE}
+  git add .
+  git commit -m "Add ci.jindra.io/Pipeline type"
+fi
+
+if [ ! -e api/${VERSION}/pipeline_webhook.go ]
+then
+  kubebuilder create webhook --group ${GROUP} --version ${VERSION} --kind ${TYPE} --defaulting --programmatic-validation
+  git add api/${VERSION}/pipeline_webhook.go
+  git commit -m "Add webhook scaffold" api/${VERSION}/pipeline_webhook.go main.go
+fi

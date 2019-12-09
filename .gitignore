@@ -1,0 +1,5 @@
+!vendor/**/zz_generated.*
+/.pki
+/bin
+/config/default/admission_controllers_ca_bundle_patch.yaml
+/cover.out
