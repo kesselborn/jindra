@@ -11,14 +11,21 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
-all: manager
+all: manager bin/kubectl-podstatus bin/k8s-pod-watcher bin/jindra-cli
+
+bin/kubectl-podstatus bin/k8s-pod-watcher bin/jindra-cli:
+	go build -o $@ ./cmd/$$(basename $@) 
 
 # Run tests
 test: generate fmt vet manifests
+	go test -timeout 31s -v ./api/v1alpha1 || { test $$? = 1 && code -d /tmp/expected /tmp/got; }
 	go test ./... -coverprofile cover.out
+	cd pkg/jindra/tools/crij && go test -v 
 
 # Build manager binary
-manager: generate fmt vet
+manager: bin/manager
+
+bin/manager: generate fmt vet
 	go build -o bin/manager main.go
 
 # Run against the configured Kubernetes cluster in ~/.kube/config
