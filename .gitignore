@@ -1,3 +1,4 @@
+!/bin/*.sh
 !vendor/**/zz_generated.*
 /.pki
 /bin

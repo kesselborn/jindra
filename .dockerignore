@@ -1,0 +1,5 @@
+/bin/crij
+/bin/jindra-cli
+/bin/k8s-pod-watcher
+/bin/kubectl-podstatus
+/bin/manager

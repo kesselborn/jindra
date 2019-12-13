@@ -113,6 +113,8 @@ github.com/json-iterator/go v0.0.0-20180701071628-ab8a2e0c74be/go.mod h1:+SdeFBv
 github.com/json-iterator/go v1.1.6 h1:MrUvLMLTMxbqFJ9kzlvat/rYZqZnW3u4wkLzWTaFwKs=
 github.com/json-iterator/go v1.1.6/go.mod h1:+SdeFBvtyEkXs7REEP0seUULqWtbJapLOCVDaaPEHmU=
 github.com/julienschmidt/httprouter v1.2.0/go.mod h1:SYymIcj16QtmaHHD7aYtjjsJG7VTCxuUUipMqKk8s4w=
+github.com/kesselborn/jindra/pkg/jindra/tools/crij v0.0.0-20191111222603-46ebd75ceb8f h1:OvQsLo1GgzMre0waEOeP7JHO8ua0Sgz+5s63oSy8g4Y=
+github.com/kesselborn/jindra/pkg/jindra/tools/crij v0.0.0-20191111222603-46ebd75ceb8f/go.mod h1:f5GIUFulcl8OgDmtqUu5MVsLCfd36LzNn+IRfYDDHmg=
 github.com/kesselborn/jindra/pkg/jindra/tools/k8spodstatus v0.0.0-20191111222603-46ebd75ceb8f h1:huQlOaKOCZCPDRz0VMtH+IdNOdBf30IttmKpMLD6q3E=
 github.com/kesselborn/jindra/pkg/jindra/tools/k8spodstatus v0.0.0-20191111222603-46ebd75ceb8f/go.mod h1:lIQbp+dHjfK1tt7Rk8ncwMI7zWOhrWI8qwfJqUI8sYc=
 github.com/konsorten/go-windows-terminal-sequences v1.0.1/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=

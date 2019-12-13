@@ -23,6 +23,13 @@ func configMap(p jindra.Pipeline, buildNo int) {
 	fmt.Println(interface2yaml(cm))
 }
 
+func defaulter(p jindra.Pipeline) {
+	p.SetDefaults()
+
+	fmt.Println("---")
+	fmt.Println(interface2yaml(p))
+}
+
 func job(p jindra.Pipeline, buildNo int) {
 	job, err := jindra.PipelineRunJob(p, buildNo)
 	if err != nil {
@@ -69,8 +76,19 @@ func stageNames(p jindra.Pipeline, buildNo int) {
 	}
 }
 
+func validate(p jindra.Pipeline) {
+	err := p.Validate()
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "pipeline config is invalid: \n%s\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("pipeline config is valid")
+}
+
 func main() {
-	config := flag.String("c", "", "jindra pipeline config")
+	config := flag.String("c", "", "jindra pipeline config (use '-c -' for reading from stdin)")
 	help := flag.Bool("h", false, "show help text")
 	buildNo := flag.Int("build-no", 42, "build number")
 
@@ -85,6 +103,9 @@ Commands:
   configmap   : print configmap
   job         : print runner job
   secret      : print secret
+
+  defaulter   : print config with default values
+  validate    : validate pipeline file
 
 Options: 
 `, os.Args[0])
@@ -107,7 +128,15 @@ Options:
 		usage(*help)
 	}
 
-	yamlData, err := ioutil.ReadFile(*config)
+	var err error
+	var yamlData []byte
+
+	if *config == "-" {
+		yamlData, err = ioutil.ReadAll(os.Stdin)
+	} else {
+		yamlData, err = ioutil.ReadFile(*config)
+	}
+
 	if err != nil {
 		log.Fatalf("error reading file %s: %s", *config, err)
 	}
@@ -124,6 +153,8 @@ Options:
 		job(p, *buildNo)
 	case "configmap":
 		configMap(p, *buildNo)
+	case "defaulter":
+		defaulter(p)
 	case "job":
 		job(p, *buildNo)
 	case "secret":
@@ -135,6 +166,8 @@ Options:
 		stage(p, *buildNo, flag.Arg(1)+".yaml")
 	case "stagenames":
 		stageNames(p, *buildNo)
+	case "validate":
+		validate(p)
 	case "":
 		fmt.Println("no sub command given")
 		usage(false)
@@ -142,7 +175,6 @@ Options:
 		fmt.Printf("unknown sub command %s\n", flag.Arg(0))
 		usage(false)
 	}
-
 }
 
 func interface2yaml(x interface{}) string {

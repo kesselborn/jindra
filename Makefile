@@ -11,16 +11,16 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
-all: manager bin/kubectl-podstatus bin/k8s-pod-watcher bin/jindra-cli
+all: manager bin/kubectl-podstatus bin/k8s-pod-watcher bin/jindra-cli bin/crij
 
-bin/kubectl-podstatus bin/k8s-pod-watcher bin/jindra-cli:
-	go build -o $@ ./cmd/$$(basename $@) 
+bin/crij bin/kubectl-podstatus bin/k8s-pod-watcher bin/jindra-cli: $(shell find . -name "*.go")
+	go build -o $@ ./cmd/$$(basename $@)
 
 # Run tests
 test: generate fmt vet manifests
 	go test -timeout 31s -v ./api/v1alpha1 || { test $$? = 1 && code -d /tmp/expected /tmp/got; }
 	go test ./... -coverprofile cover.out
-	cd pkg/jindra/tools/crij && go test -v 
+	cd pkg/jindra/tools/crij && go test -v
 
 # Build manager binary
 manager: bin/manager
@@ -84,3 +84,9 @@ CONTROLLER_GEN=$(GOBIN)/controller-gen
 else
 CONTROLLER_GEN=$(shell which controller-gen)
 endif
+
+tools-images: jindra-runner tools pod-watcher rsync-server
+
+jindra-runner tools pod-watcher rsync-server:
+	docker build -t jindra/$@ -f Dockerfile.$@ .
+	docker push     jindra/$@

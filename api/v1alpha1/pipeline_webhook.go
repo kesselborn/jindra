@@ -42,7 +42,7 @@ var _ webhook.Defaulter = &Pipeline{}
 func (r *Pipeline) Default() {
 	pipelinelog.Info("calling defaulter for ", "name", r.Name)
 
-	// TODO(user): fill in your defaulting logic.
+	r.SetDefaults()
 }
 
 // TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.

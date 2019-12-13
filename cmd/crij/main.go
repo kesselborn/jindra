@@ -12,7 +12,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/kesselborn/jindra/pkg/jindra/tools/crij"
+	"github.com/kesselborn/jindra/crij"
 )
 
 func formattedJson(jsonString string, prefix string) string {
@@ -152,7 +152,7 @@ func main() {
 		content, err := ioutil.ReadFile(*envFile)
 		if err != nil {
 			if os.IsNotExist(err) && !*ignoreMissingEnvFile {
-				fmt.Fprintf(os.Stderr, "env file %s does not exist\n", envFile)
+				fmt.Fprintf(os.Stderr, "env file %s does not exist\n", *envFile)
 				os.Exit(1)
 			}
 			if !os.IsNotExist(err) {

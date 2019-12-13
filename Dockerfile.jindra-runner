@@ -1,6 +1,6 @@
 FROM alpine:3.6
 
-LABEL MAINTAINER="jindra@bornkessel.com"
+LABEL MAINTAINER="ci@jindra.io"
 
 ENV KUBE_LATEST_VERSION="v1.13.0"
 
@@ -13,5 +13,4 @@ RUN apk add --update bash ca-certificates \
     && rm /var/cache/apk/*
 
 CMD /runner.sh
-COPY scripts/jindra-runner.sh /runner.sh
-
+COPY bin/jindra-runner.sh /runner.sh
