@@ -1,9 +1,0 @@
-/build/_output
-/crij
-/docker-image
-/jindra-cli
-/jindra-controller-image
-/k8s-pod-watcher
-/kubectl-podstatus
-/manager
-/pkg/jindra/jindra-cli
