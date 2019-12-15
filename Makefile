@@ -34,13 +34,14 @@ run: generate fmt vet manifests
 
 # Install CRDs into a cluster
 install: manifests
+	- kubectl delete crd pipelines.ci.jindra.io
 	kustomize build config/crd | kubectl create -f -
 
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 deploy: manifests
 	cd config/manager && kustomize edit set image controller=${IMG}
 	# double execute as apply saves the old config in an annotation which gets too big
-	kubectl kustomize config/default | kubectl replace -f- || kubectl kustomize config/default | kubectl apply -f-
+	kubectl kustomize config/default | kubectl apply -f-
 
 .pki/server.crt:
 	./jindra-pki.sh
