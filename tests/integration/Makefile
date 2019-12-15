@@ -11,5 +11,5 @@ testreport.html:
 		test $$res -eq 0
 
 test:
-	CONCURRENT=${CONCURRENT} TESTS=${TESTS} ./tests.sh
+	VERBOSE=${VERBOSE} CONCURRENT=${CONCURRENT} TESTS=${TESTS} ./tests.sh
 

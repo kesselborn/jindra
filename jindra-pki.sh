@@ -1,6 +1,6 @@
 #!/bin/sh -ex
 : ${CA_SUBJ:=jindra.io}
-: ${SERVICE_NAME:=jindra-webhook-service}
+: ${SERVICE_NAME:=webhook-service}
 : ${NAMESPACE:=jindra}
 : ${PKI_DIR:=.pki}
 : ${DAYS:=3650}
@@ -80,5 +80,4 @@ webhooks:
   name: validator.jindra.io
 EOF
 
-kubectl -n ${NAMESPACE} delete secret webhook-server-cert
-kubectl -n ${NAMESPACE} create secret tls webhook-server-cert --cert .pki/server.crt --key .pki/server.key
+kubectl -n ${NAMESPACE} create --dry-run -oyaml secret tls webhook-server-cert --cert .pki/server.crt --key .pki/server.key

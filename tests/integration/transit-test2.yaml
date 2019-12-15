@@ -1,5 +1,5 @@
-apiVersion: jindra.io/v1alpha1
-kind: JindraPipeline
+apiVersion: ci.jindra.io/v1alpha1
+kind: Pipeline
 metadata:
   name: transit-test2
 spec:

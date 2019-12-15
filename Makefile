@@ -1,9 +1,9 @@
-
 # Image URL to use all building/pushing image targets
 IMG ?= jindra/jindra:latest
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
 GO_FILES = $(shell find . -name "*.go")
+NAMESPACE ?= jindra
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -38,16 +38,25 @@ install: manifests
 	kustomize build config/crd | kubectl create -f -
 
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
-deploy: manifests
+deploy.yaml: manifests
 	cd config/manager && kustomize edit set image controller=${IMG}
-	# double execute as apply saves the old config in an annotation which gets too big
-	kubectl kustomize config/default | kubectl apply -f-
+	cd config/default && kustomize edit set namespace ${PREFIX}${NAMESPACE}
+	cd config/default && kustomize edit set nameprefix ${PREFIX}
 
-.pki/server.crt:
-	./jindra-pki.sh
+	kubectl kustomize config/default > $@
+	sed -i "" -e 's/name: ${PREFIX}system$$/name: ${PREFIX}${NAMESPACE}/' \
+		        -e 's/- psp-jindra-controller$$/- ${PREFIX}psp-jindra-controller/' \
+						$@
+
+deploy: deploy.yaml
+	kubectl -n ${PREFIX}${NAMESPACE} apply -f $<
+
+.PHONY: config/webhook-certs/cert-secret.yaml
+config/webhook-certs/cert-secret.yaml:
+	SERVICE_NAME=${PREFIX}webhook-service NAMESPACE=${PREFIX}${NAMESPACE} ./jindra-pki.sh > $@
 
 # Generate manifests e.g. CRD, RBAC etc.
-manifests: controller-gen .pki/server.crt
+manifests: controller-gen config/webhook-certs/cert-secret.yaml
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
 # Run go fmt against code

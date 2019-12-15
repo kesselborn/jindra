@@ -14,12 +14,12 @@ function run() {
 }
 
 # you can put tests in other files, just include them
- for f in test_*.sh; do include $f; done
+for f in test_*.sh; do include $f; done
 
 # execute commands before running any test
 before_all() {
   kubectl create namespace ${NAMESPACE}
-  ${kubectl} apply -f ../playground/jindra-runner-permissions.yaml
+  ${kubectl} apply -f ../fixtures/jindra-runner-permissions.yaml
 
   local pod=$(wait_for_jindra_operator)
   assert_true "test -n '${pod}'" "operator pod should be running"
