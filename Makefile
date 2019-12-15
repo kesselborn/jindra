@@ -3,6 +3,7 @@
 IMG ?= jindra/jindra:latest
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
+GO_FILES = $(shell find . -name "*.go")
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -13,14 +14,13 @@ endif
 
 all: manager bin/kubectl-podstatus bin/k8s-pod-watcher bin/jindra-cli bin/crij
 
-bin/crij bin/kubectl-podstatus bin/k8s-pod-watcher bin/jindra-cli: $(shell find . -name "*.go")
+bin/crij bin/kubectl-podstatus bin/k8s-pod-watcher bin/jindra-cli: ${GO_FILES}
 	go build -o $@ ./cmd/$$(basename $@)
 
 # Run tests
 test: generate fmt vet manifests
-	go test -timeout 31s -v ./api/v1alpha1 || { test $$? = 1 && code -d /tmp/expected /tmp/got; }
-	go test ./... -coverprofile cover.out
-	cd pkg/jindra/tools/crij && go test -v
+	rm -rf /tmp/exected /tmp/got
+	go test -v ./... -coverprofile cover.out || { test $$? = 1 -a -e /tmp/expected && code -d /tmp/expected /tmp/got; }
 
 # Build manager binary
 manager: bin/manager
@@ -39,6 +39,7 @@ install: manifests
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 deploy: manifests
 	cd config/manager && kustomize edit set image controller=${IMG}
+	# double execute as apply saves the old config in an annotation which gets too big
 	kubectl kustomize config/default | kubectl replace -f- || kubectl kustomize config/default | kubectl apply -f-
 
 .pki/server.crt:
