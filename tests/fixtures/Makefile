@@ -1,4 +1,4 @@
-JINDRA_CLI=../../bin/jindra-cli
+JINDRA_CLI = ../../bin/jindra-cli
 
 update-stages:
 	-kubectl -n jindra delete configmap jindra.http-fs.42.stages
@@ -24,7 +24,7 @@ secrets:
 
 .PHONY: ${JINDRA_CLI}
  ${JINDRA_CLI}:
-	make -C ../ jindra-cli
+	make -C ../.. bin/jindra-cli
 
 jindra.http-fs.42.01-build-go-binary.yaml: ${JINDRA_CLI}
 	${JINDRA_CLI} -build-no 42 -c pipeline-example.yaml stage 01-build-go-binary > $@
