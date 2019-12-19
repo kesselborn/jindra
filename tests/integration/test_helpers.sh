@@ -30,12 +30,13 @@ function wait_for_jindra_operator() {
 
   if [ -z "${FIRST_RUN}" ]
   then
-    NAMESPACE=${NAMESPACE} make -C ../.. deploy >&2
+    KUBECONFIG=${KUBECONFIG} NAMESPACE=${NAMESPACE} make -C ../.. install deploy >&2
+    ${kubectl} apply -f ../fixtures/jindra-runner-permissions.yaml &>2
   fi
 
   for _ in $(seq 1 ${TRIES})
   do
-    local pod=$(${kubectl} get pods --no-headers -l control-plane=controller-manager|cut -f1 -d" ")
+    local pod=$(${kubectl} get pods --no-headers -l app=jindra,control-plane=controller-manager |cut -f1 -d" ")
     test -n "${pod}" && break
     sleep 2
   done
@@ -43,7 +44,7 @@ function wait_for_jindra_operator() {
   for _ in $(seq 1 ${TRIES})
   do
     sleep 2
-    ${kubectl} logs ${pod} manager|grep "starting the webhook server." > /dev/null && break
+    ${kubectl} logs ${pod} manager|grep "Starting workers" > /dev/null && break
   done
 
   test -n "${pod}" && echo "${pod}"

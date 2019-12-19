@@ -1,1 +1,4 @@
+/deploy.yaml
+/kind
+/kind.kubeconfig
 /testreport.*

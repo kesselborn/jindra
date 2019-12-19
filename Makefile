@@ -4,6 +4,7 @@ IMG ?= jindra/jindra:latest
 CRD_OPTIONS ?= "crd:trivialVersions=true"
 GO_FILES = $(shell find . -name "*.go")
 NAMESPACE ?= jindra
+DEPLOY_CONFIG ?= deploy.yaml
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -34,22 +35,22 @@ run: generate fmt vet manifests
 
 # Install CRDs into a cluster
 install: manifests
-	- kubectl delete crd pipelines.ci.jindra.io
-	kustomize build config/crd | kubectl create -f -
+	- KUBECONFIG=${KUBECONFIG} kubectl delete crd pipelines.ci.jindra.io
+	kustomize build config/crd | KUBECONFIG=${KUBECONFIG} kubectl create -f -
 
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
-deploy.yaml: manifests
+${DEPLOY_CONFIG}: manifests
 	cd config/manager && kustomize edit set image controller=${IMG}
 	cd config/default && kustomize edit set namespace ${PREFIX}${NAMESPACE}
-	cd config/default && kustomize edit set nameprefix ${PREFIX}
+	cd config/default && kustomize edit set nameprefix "${PREFIX}"
 
-	kubectl kustomize config/default > $@
+	KUBECONFIG=${KUBECONFIG} kubectl kustomize config/default > $@
 	sed -i "" -e 's/name: ${PREFIX}system$$/name: ${PREFIX}${NAMESPACE}/' \
 		        -e 's/- psp-jindra-controller$$/- ${PREFIX}psp-jindra-controller/' \
 						$@
 
-deploy: deploy.yaml
-	kubectl -n ${PREFIX}${NAMESPACE} apply -f $<
+deploy: ${DEPLOY_CONFIG}
+	KUBECONFIG=${KUBECONFIG} kubectl -n ${PREFIX}${NAMESPACE} apply -f $<
 
 .PHONY: config/webhook-certs/cert-secret.yaml
 config/webhook-certs/cert-secret.yaml:

@@ -2,11 +2,12 @@
 
 source spec.sh
 
-NAMESPACE=jindra-tests-${RANDOM}
-kubectl="kubectl -n ${NAMESPACE}"
-jindra_cli=../jindra-cli
+: ${KUBECONFIG:=${PWD}/kind.kubeconfig}
+: ${TRIES:=100}
+: ${NAMESPACE:=jindra-tests-${RANDOM}}
 
-TRIES=${TRIES:-100}
+kubectl="kubectl --kubeconfig ${KUBECONFIG} --namespace ${NAMESPACE}"
+jindra_cli=../../bin/jindra-cli
 
 function run() {
   local pipeline=$1
@@ -18,9 +19,8 @@ for f in test_*.sh; do include $f; done
 
 # execute commands before running any test
 before_all() {
-  kubectl create namespace ${NAMESPACE}
-  ${kubectl} apply -f ../fixtures/jindra-runner-permissions.yaml
-
+  assert_true "make -C ../.. bin/jindra-cli"
+  assert_true "test -x ${jindra_cli}"
   local pod=$(wait_for_jindra_operator)
   assert_true "test -n '${pod}'" "operator pod should be running"
 }
