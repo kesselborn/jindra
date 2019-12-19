@@ -1,0 +1,13 @@
+apiVersion: ci.jindra.io/v1alpha1
+kind: Pipeline
+metadata:
+  name: internal-modifications-test
+spec:
+  stages:
+    - metadata:
+        name: one
+      spec:
+        containers:
+          - name: test
+            image: alpine
+            command: ["sh", "-c", "sleep 3600"]

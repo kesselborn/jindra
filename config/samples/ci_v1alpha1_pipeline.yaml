@@ -1,0 +1,6 @@
+apiVersion: ci.jindra.io/v1alpha1
+kind: Pipeline
+metadata:
+  name: pipeline-sample
+spec:
+  foo: bar

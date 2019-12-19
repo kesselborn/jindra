@@ -1,9 +1,8 @@
-/build/_output
-/crij
-/docker-image
-/jindra-cli
-/jindra-controller-image
-/k8s-pod-watcher
-/kubectl-podstatus
-/manager
-/pkg/jindra/jindra-cli
+!/bin/*.sh
+!vendor/**/zz_generated.*
+/.pki
+/bin
+/config/default/admission_controllers_ca_bundle_patch.yaml
+/config/webhook-certs/cert-secret.yaml
+/cover.out
+/deploy.yaml

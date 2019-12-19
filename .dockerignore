@@ -1,4 +1,5 @@
-/.git
-/build/_output/bin/jindra-local
-/crij
-/pkg/jindra/jindra-cli
+/bin/crij
+/bin/jindra-cli
+/bin/k8s-pod-watcher
+/bin/kubectl-podstatus
+/bin/manager

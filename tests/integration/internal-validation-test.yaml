@@ -1,0 +1,15 @@
+apiVersion: ci.jindra.io/v1alpha1
+kind: Pipeline
+metadata:
+  name: internal-validation-test
+spec:
+  stages:
+    - metadata:
+        name: one
+        annotations:
+          jindra.io/inputs: git
+      spec:
+        containers:
+          - name: test
+            image: alpine
+            command: ["sh", "-c", "sleep 3600"]

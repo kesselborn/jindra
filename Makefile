@@ -1,70 +1,104 @@
-DOCKER_IMAGE=jindra/jindra
-GO_FILES=${shell find pkg/controller -name "*.go"} ${shell find pkg/apis -name "*.go"} ${shell find cmd/ -name "*.go"}
-PLAYGROUND_DIR=playground
+# Image URL to use all building/pushing image targets
+IMG ?= jindra/jindra:latest
+# Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
+CRD_OPTIONS ?= "crd:trivialVersions=true"
+GO_FILES = $(shell find . -name "*.go")
+NAMESPACE ?= jindra
+DEPLOY_CONFIG ?= deploy.yaml
 
-all: jindra-cli k8s-pod-watcher kubectl-podstatus crij build/_output/bin/jindra
+# Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
+ifeq (,$(shell go env GOBIN))
+GOBIN=$(shell go env GOPATH)/bin
+else
+GOBIN=$(shell go env GOBIN)
+endif
 
-crij: pkg/jindra/tools/crij/*.go pkg/jindra/tools/crij/cmd/crij/*.go
-	cd ${shell dirname $<} && go build ./cmd/$@ && cp $@ $(CURDIR)/$@
+all: manager bin/kubectl-podstatus bin/k8s-pod-watcher bin/jindra-cli bin/crij
 
-kubectl-podstatus: pkg/jindra/tools/k8spodstatus/*.go pkg/jindra/tools/k8spodstatus/cmd/kubectl-podstatus/*.go 
-	cd ${shell dirname $<} && go build ./cmd/$@ && cp $@ $(CURDIR)/$@
+bin/crij bin/kubectl-podstatus bin/k8s-pod-watcher bin/jindra-cli: ${GO_FILES}
+	go build -o $@ ./cmd/$$(basename $@)
 
-k8s-pod-watcher: pkg/jindra/tools/k8spodstatus/*.go pkg/jindra/tools/k8spodstatus/cmd/k8s-pod-watcher/*.go 
-	cd ${shell dirname $<} && go build ./cmd/$@ && cp $@ $(CURDIR)/$@
+# Run tests
+test: generate fmt vet manifests
+	rm -rf /tmp/exected /tmp/got
+	go test -v ./... -coverprofile cover.out || { test $$? = 1 -a -e /tmp/expected && code -d /tmp/expected /tmp/got; }
 
-jindra-cli: pkg/jindra/*.go pkg/jindra/cmd/jindra-cli/*.go
-	cd ${shell dirname $<} && go build ./cmd/$@ && cp $@ $(CURDIR)/$@
+# Build manager binary
+manager: bin/manager
 
-test:
-	cd pkg/jindra/tools/crij && go test -v 
-	cd pkg/jindra && go test -timeout 30s -v || { test $$? = 1 && code -d /tmp/expected /tmp/got; }
+bin/manager: generate fmt vet
+	go build -o bin/manager main.go
 
-local: jindra-controller-image
-	- kubectl -n $${NAMESPACE:?please set \$$NAMESPACE env var} create -f deploy/crds/jindra_v1alpha1_jindrapipeline_crd.yaml
-	OPERATOR_NAME=jindra operator-sdk up local --namespace=jindra
+# Run against the configured Kubernetes cluster in ~/.kube/config
+run: generate fmt vet manifests
+	go run ./main.go
 
-remote: jindra-controller-image
-	test -n "$${NAMESPACE:?please set \$$NAMESPACE env var}"
-	- test -z "${NO_DELETE}" && ls deploy/*.yaml|xargs -n1 kubectl -n ${NAMESPACE} delete -f || true
+# Install CRDs into a cluster
+install: manifests
+	- KUBECONFIG=${KUBECONFIG} kubectl delete crd pipelines.ci.jindra.io
+	kustomize build config/crd | KUBECONFIG=${KUBECONFIG} kubectl create -f -
 
-	- kubectl -n ${NAMESPACE} apply  -f deploy/crds/jindra_v1alpha1_jindrapipeline_crd.yaml
-	sed -i "" 's|namespace: .*$$|namespace: ${NAMESPACE}|g' deploy/cluster_role_binding.yaml
-	ls deploy/*.yaml  |xargs -n1 kubectl -n ${NAMESPACE} apply  --wait -f
+# Deploy controller in the configured Kubernetes cluster in ~/.kube/config
+${DEPLOY_CONFIG}: manifests
+	cd config/manager && kustomize edit set image controller=${IMG}
+	cd config/default && kustomize edit set namespace ${PREFIX}${NAMESPACE}
+	cd config/default && kustomize edit set nameprefix "${PREFIX}"
 
-clean:
-	- kubectl delete crd jindrapipelines.jindra.io
-	- ls deploy/*.yaml|xargs -n1 kubectl -n jindra delete -f
-	rm -rf build/_output/bin/jindra
+	KUBECONFIG=${KUBECONFIG} kubectl kustomize config/default > $@
+	sed -i "" -e 's/name: ${PREFIX}system$$/name: ${PREFIX}${NAMESPACE}/' \
+		        -e 's/- psp-jindra-controller$$/- ${PREFIX}psp-jindra-controller/' \
+						$@
 
-deploy/crds/jindra_v1alpha1_jindrapipeline_crd.yaml: ${GO_FILES}
-	operator-sdk generate k8s
-	operator-sdk generate openapi
-	- kubectl delete crd jindrapipelines.jindra.io
-	kubectl create -f deploy/crds/jindra_v1alpha1_jindrapipeline_crd.yaml
+deploy: ${DEPLOY_CONFIG}
+	KUBECONFIG=${KUBECONFIG} kubectl -n ${PREFIX}${NAMESPACE} apply -f $<
 
-build/_output/bin/jindra: deploy/crds/*.yaml ${GO_FILES}
-	operator-sdk build ${DOCKER_IMAGE}
+.PHONY: config/webhook-certs/cert-secret.yaml
+config/webhook-certs/cert-secret.yaml:
+	SERVICE_NAME=${PREFIX}webhook-service NAMESPACE=${PREFIX}${NAMESPACE} ./jindra-pki.sh > $@
 
-jindra-controller-image: build/_output/bin/jindra
-	docker push jindra/jindra
-	sed -i "" 's|REPLACE_IMAGE|${DOCKER_IMAGE}|g' deploy/operator.yaml
-	touch $@
+# Generate manifests e.g. CRD, RBAC etc.
+manifests: controller-gen config/webhook-certs/cert-secret.yaml
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
-update-helper-images: tools-image rsync-image runner-image pod-watcher-image
+# Run go fmt against code
+fmt:
+	go fmt ./...
 
-rsync-image:
-	docker build -t jindra/rsync-server:latest -f Dockerfile.rsync-server .
-	docker push jindra/rsync-server:latest
+# Run go vet against code
+vet:
+	go vet ./...
 
-tools-image:
-	docker build -t jindra/tools:latest -f Dockerfile.jindra-tools .
-	docker push jindra/tools:latest
+# Generate code
+generate: controller-gen
+	$(CONTROLLER_GEN) object:headerFile=./hack/boilerplate.go.txt paths="./..."
 
-runner-image:
-	docker build -t jindra/jindra-runner:latest -f Dockerfile.jindra-runner .
-	docker push jindra/jindra-runner:latest
+# Build the docker image
+docker-build: test
+	docker build . -t ${IMG}
 
-pod-watcher-image:
-	docker build -t jindra/pod-watcher:latest -f Dockerfile.k8s-pod-watcher .
-	docker push jindra/pod-watcher:latest
+# Push the docker image
+docker-push:
+	docker push ${IMG}
+
+# find or download controller-gen
+# download controller-gen if necessary
+controller-gen:
+ifeq (, $(shell which controller-gen))
+	@{ \
+	set -e ;\
+	CONTROLLER_GEN_TMP_DIR=$$(mktemp -d) ;\
+	cd $$CONTROLLER_GEN_TMP_DIR ;\
+	go mod init tmp ;\
+	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.2 ;\
+	rm -rf $$CONTROLLER_GEN_TMP_DIR ;\
+	}
+CONTROLLER_GEN=$(GOBIN)/controller-gen
+else
+CONTROLLER_GEN=$(shell which controller-gen)
+endif
+
+tools-images: jindra-runner tools pod-watcher rsync-server
+
+jindra-runner tools pod-watcher rsync-server:
+	docker build -t jindra/$@ -f Dockerfile.$@ .
+	docker push     jindra/$@
