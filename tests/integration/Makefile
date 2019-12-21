@@ -1,14 +1,27 @@
 TESTS ?= .
 KUBECONFIG = ${CURDIR}/kind.kubeconfig
-NAMESPACE ?= jindra-tests
+CLUSTER_NAME = jindra
+
+TEST_ARGS = KUBECONFIG=${KUBECONFIG} \
+						CONCURRENT=${CONCURRENT} \
+						TESTS=${TESTS} \
+						INCLUDES=${INCLUDES} \
+						NO_ANSI_COLOR=${NO_ANSI_COLOR}
+						FAIL_FAST=${FAIL_FAST}
 
 kind:
 	curl -Lo ./kind https://github.com/kubernetes-sigs/kind/releases/download/v0.6.1/kind-$$(uname)-amd64
 	chmod +x ./kind
 
+jindra-kind-cluster: ${KUBECONFIG}
+
+.PHONY: ${KUBECONFIG}
 ${KUBECONFIG}: kind
 		docker info
-		./kind create cluster --name jindra --kubeconfig ${KUBECONFIG}
+		di=$$(docker ps -q -a --filter name=${CLUSTER_NAME}-control-plane) && \
+			 docker start $${di} || \
+			./kind create cluster --name ${CLUSTER_NAME} --kubeconfig ${KUBECONFIG}
+
 		printf "waiting for node to become ready "; \
 		for _ in $$(seq 0 120); \
 		do  \
@@ -21,13 +34,20 @@ ${KUBECONFIG}: kind
 testreport.html:
 	which go-junit-report
 	set -o pipefail; \
-	  KUBECONFIG=${KUBECONFIG} NAMESPACE=${NAMESPACE} CONCURRENT=${CONCURRENT} TESTS=${TESTS} make test | tee testreport.log; \
+	  ${TEST_ARGS} make test | tee testreport.log; \
 		res=$$?; \
 		cat testreport.log | go-junit-report > testreport.xml; \
 		./junit2html testreport.xml > testreport.html; \
 		kubectl --kubeconfig=${KUBECONFIG} delete --wait --filename deploy.yaml
 		test $$res -eq 0
 
-test: ${KUBECONFIG}
-	KUBECONFIG=${KUBECONFIG} VERBOSE=${VERBOSE} CONCURRENT=${CONCURRENT} TESTS=${TESTS} ./tests.sh
+.PHONY: load-images
+load-images:
+	@for i in jindra $$(cd ../..; ls Dockerfile.*|cut -f2 -d.); \
+	do\
+		kind load docker-image --name ${CLUSTER_NAME} --nodes ${CLUSTER_NAME}-control-plane jindra/$$i; \
+	done
+
+test: ${KUBECONFIG} load-images
+	${TEST_ARGS} ./tests.sh
 
