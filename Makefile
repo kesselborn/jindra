@@ -38,6 +38,12 @@ install: manifests
 	- KUBECONFIG=${KUBECONFIG} kubectl delete crd pipelines.ci.jindra.io
 	kustomize build config/crd | KUBECONFIG=${KUBECONFIG} kubectl create -f -
 
+reset-config:
+	cd config/manager && kustomize edit set image controller=${IMG}
+	cd config/default && kustomize edit set namespace jindra
+	cd config/default && kustomize edit set nameprefix ""
+
+
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 ${DEPLOY_CONFIG}: manifests
 	cd config/manager && kustomize edit set image controller=${IMG}

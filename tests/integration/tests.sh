@@ -27,7 +27,8 @@ before_all() {
 
 # execute command when all tests have beend executed
 after_all() {
-  kubectl delete --wait=false namespace ${NAMESPACE}
+  make -C ../.. reset-config
+  kubectl delete --wait=false namespace ${NAMESPACE} &>/dev/null
 }
 
 run_tests jindra
