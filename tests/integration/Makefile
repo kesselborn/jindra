@@ -41,13 +41,16 @@ testreport.html:
 		kubectl --kubeconfig=${KUBECONFIG} delete --wait --filename deploy.yaml
 		test $$res -eq 0
 
-.PHONY: load-images
-load-images:
+.PHONY: load-jindra-images
+load-jindra-images:
 	@for i in jindra $$(cd ../..; ls Dockerfile.*|cut -f2 -d.); \
 	do\
-		kind load docker-image --name ${CLUSTER_NAME} --nodes ${CLUSTER_NAME}-control-plane jindra/$$i; \
+		CLUSTER_NAME=${CLUSTER_NAME} IMAGE=jindra/$$i make load-image
 	done
 
-test: ${KUBECONFIG} load-images
+load-image:
+	@kind load docker-image --name ${CLUSTER_NAME} --nodes ${CLUSTER_NAME}-control-plane $${IMAGE:?}; \
+
+test: ${KUBECONFIG} load-jindra-images
 	${TEST_ARGS} ./tests.sh
 
