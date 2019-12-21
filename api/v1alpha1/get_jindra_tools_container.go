@@ -23,8 +23,8 @@ import (
 
 func getJindraToolsContainer(toolsMount core.VolumeMount, createLocksSrc []string) core.Container {
 	return core.Container{
-		Name:            "get-jindra-tools",
-		Image:           "jindra/tools",
+		Name:            toolsContainerName,
+		Image:           toolsImage,
 		ImagePullPolicy: "Always",
 		VolumeMounts: []core.VolumeMount{
 			{Name: sempahoresMountName, MountPath: semaphoresPrefixPath},

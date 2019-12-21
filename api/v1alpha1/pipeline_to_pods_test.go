@@ -187,3 +187,24 @@ func TestDefaultModifier(t *testing.T) {
 	}
 
 }
+
+// func TestImagePullPolicy(t *testing.T) {
+// 	ppl := getExamplePipeline(t)
+// 	ppl.Annotations[imagePullPolicyAnnotationKey] = "IfNotPresent"
+//
+// 	stages, _ := generateStagePods(ppl, 42)
+//
+// 	for i, test := range []struct {
+// 		got         interface{}
+// 		expectation interface{}
+// 		desc        string
+// 	}{
+// 		{stages["01-build-go-binary.yaml"].Spec.InitContainers
+// 	} {
+// 		if reflect.DeepEqual(test.expectation, test.got) {
+// 			t.Logf("\t%2d: %-80s %s", i, test.desc, ok())
+// 		} else {
+// 			t.Fatalf("\t%2d: %-80s %s", i, test.desc, errMsg(t, test.expectation, test.got))
+// 		}
+// 	}
+// }

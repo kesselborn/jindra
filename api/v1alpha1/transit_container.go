@@ -23,8 +23,8 @@ import (
 
 func transitContainer(ppl Pipeline) core.Container {
 	return core.Container{
-		Name:  "transit",
-		Image: "mrsixw/concourse-rsync-resource",
+		Name:  transitContainerName,
+		Image: transitImage,
 		Env: []core.EnvVar{
 			{Name: "transit.params.rsync_opts", Value: `["--delete", "--recursive"]`},
 			{Name: "transit.source.server", Value: "${MY_IP}"},

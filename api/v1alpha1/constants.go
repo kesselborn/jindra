@@ -17,28 +17,41 @@ package v1alpha1
 
 // annotation keys
 const (
-	buildNoOffsetAnnotationKey  = "jindra.io/build-no-offset"
-	debugContainerAnnotationKey = "jindra.io/debug-container"
-	debugResourcesAnnotationKey = "jindra.io/debug-resources"
-	firstInitContainers         = "jindra.io/first-init-containers"
-	inResourceAnnotationKey     = "jindra.io/inputs"
-	inResourceEnvAnnotationKey  = "jindra.io/inputs-envs"
-	outResourceAnnotationKey    = "jindra.io/outputs"
-	outResourceEnvAnnotationKey = "jindra.io/outputs-envs"
-	servicesAnnotationKey       = "jindra.io/services"
-	waitForAnnotationKey        = "jindra.io/wait-for"
+	buildNoOffsetAnnotationKey   = "jindra.io/build-no-offset"
+	debugContainerAnnotationKey  = "jindra.io/debug-container"
+	debugResourcesAnnotationKey  = "jindra.io/debug-resources"
+	firstInitContainers          = "jindra.io/first-init-containers"
+	inResourceAnnotationKey      = "jindra.io/inputs"
+	inResourceEnvAnnotationKey   = "jindra.io/inputs-envs"
+	outResourceAnnotationKey     = "jindra.io/outputs"
+	outResourceEnvAnnotationKey  = "jindra.io/outputs-envs"
+	servicesAnnotationKey        = "jindra.io/services"
+	waitForAnnotationKey         = "jindra.io/wait-for"
+	imagePullPolicyAnnotationKey = "jindra.io/image-pull-policy"
 )
 
 // container image names
 const (
-	runnerImage                = "jindra/jindra-runner:latest"
-	runnerContainerName        = "runner"
-	podwatcherImage            = "jindra/pod-watcher:latest"
-	podwatcherContainerName    = "pod-watcher"
-	rsyncImage                 = "jindra/rsync-server:latest"
-	rsyncContainerName         = "rsync"
+	runnerContainerName = "runner"
+	runnerImage         = "jindra/jindra-runner:latest"
+
+	podwatcherContainerName = "pod-watcher"
+	podwatcherImage         = "jindra/pod-watcher:latest"
+
+	rsyncContainerName = "rsync"
+	rsyncImage         = "jindra/rsync-server:latest"
+
 	setSempahoresContainerName = "set-semaphores"
 	setSemaphoresImage         = "alpine"
+
+	toolsContainerName = "get-jindra-tools"
+	toolsImage         = "jindra/tools"
+
+	transitContainerName = "transit"
+	transitImage         = "mrsixw/concourse-rsync-resource"
+
+	watcherContainerName = "jindra-watcher"
+	watcherImage         = "alpine"
 )
 
 const (

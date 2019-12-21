@@ -24,8 +24,8 @@ import (
 
 func watcherContainer(stageName, waitFor string, semaphoreMount core.VolumeMount) core.Container {
 	return core.Container{
-		Name:  "jindra-watcher",
-		Image: "alpine",
+		Name:  watcherContainerName,
+		Image: watcherImage,
 		Args: []string{"sh", "-c", fmt.Sprintf(`printf "waiting for steps to finish "
 containers=$(echo "%s"|sed "s/[,]*%s//g")
 while ! wget -qO- ${MY_IP}:8080/pod/${MY_NAME}.%s?containers=${containers}|grep Completed &>/dev/null
