@@ -47,6 +47,9 @@ func (ppl *Pipeline) SetDefaults() []interface{} {
 		}
 	}
 
+	if ppl.Annotations == nil {
+		ppl.Annotations = map[string]string{}
+	}
 	if ppl.Annotations[buildNoOffsetAnnotationKey] == "" {
 		modifiedItems = append(modifiedItems, "/build-offset", "0")
 		ppl.Annotations[buildNoOffsetAnnotationKey] = "0"
