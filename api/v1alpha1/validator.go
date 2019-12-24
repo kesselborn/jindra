@@ -34,6 +34,7 @@ func (ppl Pipeline) Validate() error {
 		ppl.serviceExist,
 		ppl.triggerHasResource,
 		ppl.triggerIsInResourceOfFirstStage,
+		ppl.validImagePullPolicyAnnotation,
 	} {
 		if err := f(); err != nil {
 			return err
@@ -165,6 +166,19 @@ func (ppl Pipeline) correctOrNoRestartPolicy() error {
 	}
 
 	return nil
+}
+
+func (ppl Pipeline) validImagePullPolicyAnnotation() error {
+	if ppl.Annotations == nil {
+		return nil
+	}
+
+	v := ppl.Annotations[imagePullPolicyAnnotationKey]
+	if v == "" || v == string(core.PullAlways) || v == string(core.PullIfNotPresent) || v == string(core.PullNever) {
+		return nil
+	}
+
+	return fmt.Errorf("invalid pull policy '%s'", v)
 }
 
 func findDuplicate(words []string) string {

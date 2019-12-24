@@ -40,6 +40,14 @@ func containerNames(p core.Pod) []string {
 	return names
 }
 
+func (ppl Pipeline) imagePullPolicy() core.PullPolicy {
+	if ppl.Annotations == nil {
+		return core.PullPolicy("")
+	}
+
+	return core.PullPolicy(ppl.Annotations[imagePullPolicyAnnotationKey])
+}
+
 func initContainerNames(p core.Pod) []string {
 	names := []string{}
 	for _, c := range p.Spec.InitContainers {

@@ -21,10 +21,11 @@ import (
 	core "k8s.io/api/core/v1"
 )
 
-func transitContainer(ppl Pipeline) core.Container {
+func (ppl Pipeline) transitContainer() core.Container {
 	return core.Container{
-		Name:  transitContainerName,
-		Image: transitImage,
+		Name:            transitContainerName,
+		Image:           transitImage,
+		ImagePullPolicy: ppl.imagePullPolicy(),
 		Env: []core.EnvVar{
 			{Name: "transit.params.rsync_opts", Value: `["--delete", "--recursive"]`},
 			{Name: "transit.source.server", Value: "${MY_IP}"},

@@ -22,11 +22,11 @@ import (
 	core "k8s.io/api/core/v1"
 )
 
-func jindraRunnerContainer(ppl Pipeline, buildNo int) core.Container {
+func (ppl Pipeline) jindraRunnerContainer(buildNo int) core.Container {
 	return core.Container{
 		Name:            runnerContainerName,
 		Image:           runnerImage,
-		ImagePullPolicy: core.PullAlways,
+		ImagePullPolicy: ppl.imagePullPolicy(),
 		Env: []core.EnvVar{
 			{Name: "MY_IP", ValueFrom: &core.EnvVarSource{FieldRef: &core.ObjectFieldSelector{FieldPath: "status.podIP"}}},
 			{Name: "MY_NAME", ValueFrom: &core.EnvVarSource{FieldRef: &core.ObjectFieldSelector{FieldPath: "metadata.name"}}},

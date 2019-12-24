@@ -1,22 +1,23 @@
 ### Annotations
 ## Pipeline
-| Annotation                  | Meaning                                                      |
-| --------------------------- | ------------------------------------------------------------ |
-| `jindra.io/build-no-offset` | Offset for your build number (if you re-create a pipeline which already had runs before) -- **must be a string!** |
+| Annotation                    | Meaning                                                                                                                                      |
+|-------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| `jindra.io/build-no-offset`   | Offset for your build number (if you re-create a pipeline which already had runs before) -- **must be a string!**                            |
+| `jindra.io/image-pull-policy` | Explicitly sets image pull policy of all jindra-generated containers -- allows for local offline usage if images are loaded to local cluster |
 
 
 
 ## Stage (Pod)
 
-| Annotation                        | Meaning                                                      |
-| --------------------------------- | ------------------------------------------------------------ |
-| `jindra.io/inputs`                | Comma separated list of input resources of this stage        |
-| `jindra.io/outputs`               | Comma separated list of output resources of this stage       |
-| `jindra.io/debug-container`       | Set to `enable` to have a container with all shared volumes to inspect a stage. The stage pod will not finish unless you delete the file `/DELETE_ME_TO_STOP_DEBUG_CONTAINER` withing the container `jindra-debug-container` (where the pipeline continues) or delete the pod (where the pipeline files) |
-| `jindra.io/debug-resources` | Set to `enable` to keep filing resource containers running for 5 more minutes for debugging purposes |
-|               | Comma separated list of containers, which provide services for the current stage (e.g. a database for testing) and shouldn't be waited for to finish |
+| Annotation                        | Meaning                                                                                                                                                                                                                                                                                                                                                                                              |
+|-----------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `jindra.io/inputs`                | Comma separated list of input resources of this stage                                                                                                                                                                                                                                                                                                                                                |
+| `jindra.io/outputs`               | Comma separated list of output resources of this stage                                                                                                                                                                                                                                                                                                                                               |
+| `jindra.io/debug-container`       | Set to `enable` to have a container with all shared volumes to inspect a stage. The stage pod will not finish unless you delete the file `/DELETE_ME_TO_STOP_DEBUG_CONTAINER` withing the container `jindra-debug-container` (where the pipeline continues) or delete the pod (where the pipeline files)                                                                                             |
+| `jindra.io/debug-resources`       | Set to `enable` to keep filing resource containers running for 5 more minutes for debugging purposes                                                                                                                                                                                                                                                                                                 |
+|                                   | Comma separated list of containers, which provide services for the current stage (e.g. a database for testing) and shouldn't be waited for to finish                                                                                                                                                                                                                                                 |
 | `jindra.io/outputs-envs`          | a textual addition / modification for output resources. Use it like this:<br>`jindra.io/outputs-envs: |`<br>	`     registry-image.params.image=./image.tar`<br>	`registry-image.source.tag=latest`<br>	`git.source.uri=git@github.com/jindra/jindra`<br><br>**Note**: no interpolation of other environment variables is done, nor are multiline values supportet; don't put quotes around the value |
-| `jindra.io/first-init-containers` | Comma separated list of init-container names that should be executed in the specified order _before_ the jindra-injected init containers (input resources, transit resource). All resource mounts will be available in these init containers. |
+| `jindra.io/first-init-containers` | Comma separated list of init-container names that should be executed in the specified order _before_ the jindra-injected init containers (input resources, transit resource). All resource mounts will be available in these init containers.                                                                                                                                                        |
 
 
 ## Notes to self

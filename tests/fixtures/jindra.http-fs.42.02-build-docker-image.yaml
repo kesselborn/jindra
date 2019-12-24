@@ -196,7 +196,6 @@ spec:
       touch /var/lock/jindra/container-jindra-resource-out-transit
       touch /var/lock/jindra/container-jindra-resource-out-registry-image
     image: jindra/tools
-    imagePullPolicy: Always
     name: get-jindra-tools
     resources: {}
     volumeMounts:

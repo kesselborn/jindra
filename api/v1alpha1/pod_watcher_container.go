@@ -21,11 +21,11 @@ import (
 	core "k8s.io/api/core/v1"
 )
 
-func podWatcherContainer() core.Container {
+func (ppl Pipeline) podWatcherContainer() core.Container {
 	return core.Container{
 		Name:            podwatcherContainerName,
 		Image:           podwatcherImage,
-		ImagePullPolicy: core.PullAlways,
+		ImagePullPolicy: ppl.imagePullPolicy(),
 		Env: []core.EnvVar{
 			{Name: "STAGES_RUNNING_SEMAPHORE", Value: path.Join(semaphoresPrefixPath, stagesRunningSemaphore)},
 		},

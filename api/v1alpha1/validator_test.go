@@ -26,6 +26,19 @@ import (
 
 func TestTriggerInResourceExists(t *testing.T) {
 	ppl := getExamplePipeline(t)
+	ppl.Annotations[imagePullPolicyAnnotationKey] = "xxx"
+
+	err := emptyErrorWrapper(ppl.Validate())
+	expected := errors.New("invalid pull policy 'xxx'")
+
+	if !reflect.DeepEqual(expected, err) {
+		t.Fatalf("\t%2d: %-80s %s", 0, "pull policy must be empty, Always, IfNotPresent oder Never", errMsg(t, expected.Error(), err.Error()))
+	}
+
+}
+
+func TestInvalidPullPolicy(t *testing.T) {
+	ppl := getExamplePipeline(t)
 	ppl.Spec.Resources.Triggers = append(ppl.Spec.Resources.Triggers, Trigger{
 		Name:     "xxx",
 		Schedule: "* * * * *",

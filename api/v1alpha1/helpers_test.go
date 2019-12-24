@@ -118,6 +118,38 @@ func ok() string {
 	return " [OK]"
 }
 
+func collectJindraContainers(containers []core.Container) []core.Container {
+	filteredContainers := []core.Container{}
+
+	jindraContainerNames := map[string]bool{
+		podwatcherContainerName:    true,
+		rsyncContainerName:         true,
+		runnerContainerName:        true,
+		setSempahoresContainerName: true,
+		toolsContainerName:         true,
+		transitContainerName:       true,
+		watcherContainerName:       true,
+	}
+
+	for _, container := range containers {
+		if jindraContainerNames[container.Name] {
+			filteredContainers = append(filteredContainers, container)
+		}
+	}
+
+	return filteredContainers
+}
+
+func getJindraContainers(pods stagePods) []core.Container {
+	containers := []core.Container{}
+
+	for _, pod := range pods {
+		containers = append(containers, collectJindraContainers(append(pod.Spec.InitContainers, pod.Spec.Containers...))...)
+	}
+
+	return containers
+}
+
 func errMsg(t *testing.T, expected interface{}, got interface{}) string {
 	gotString, err := yaml.Marshal(got)
 	if err != nil {

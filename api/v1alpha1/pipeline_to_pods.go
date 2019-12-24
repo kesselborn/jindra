@@ -65,6 +65,7 @@ func NewPipelineFromYaml(yamlData []byte) (Pipeline, error) {
 	return p, nil
 }
 
+// TODO: functions -> methods when ppl is first parameter
 // PipelineRunJob creates the job that runs the pipeline
 func PipelineRunJob(ppl Pipeline, buildNo int) (batch.Job, error) {
 	backoffLimit := int32(0)
@@ -110,12 +111,12 @@ func PipelineRunJob(ppl Pipeline, buildNo int) (batch.Job, error) {
 						},
 					),
 					Containers: []core.Container{
-						jindraRunnerContainer(ppl, buildNo),
-						podWatcherContainer(),
-						rsyncServerContainer(),
+						ppl.jindraRunnerContainer(buildNo),
+						ppl.podWatcherContainer(),
+						ppl.rsyncServerContainer(),
 					},
 					InitContainers: []core.Container{
-						semaphoreContainer(),
+						ppl.semaphoreContainer(),
 					},
 				},
 			},
@@ -237,7 +238,7 @@ func generateStageInitContainers(p core.Pod, ppl Pipeline) ([]core.Container, er
 	}
 	toolsMount := core.VolumeMount{Name: toolsMountName, MountPath: toolsPrefixPath}
 
-	initContainers := []core.Container{getJindraToolsContainer(toolsMount, createLocksSrc)}
+	initContainers := []core.Container{ppl.getJindraToolsContainer(toolsMount, createLocksSrc)}
 
 	toolsMount.ReadOnly = true
 
@@ -329,10 +330,10 @@ func generateStageContainers(p core.Pod, stageName string, waitFor string, ppl P
 	toolsMount := core.VolumeMount{Name: toolsMountName, MountPath: toolsPrefixPath, ReadOnly: true}
 	semaphoreMount := core.VolumeMount{Name: sempahoresMountName, MountPath: semaphoresPrefixPath}
 
-	containers := append(p.Spec.Containers, watcherContainer(stageName, waitFor, semaphoreMount))
+	containers := append(p.Spec.Containers, ppl.watcherContainer(stageName, waitFor, semaphoreMount))
 
 	if p.Annotations[debugContainerAnnotationKey] == "enable" {
-		containers = append([]core.Container{debugContainer(toolsMount, semaphoreMount, resourceNames(p))}, containers...)
+		containers = append([]core.Container{ppl.debugContainer(toolsMount, semaphoreMount, resourceNames(p))}, containers...)
 	}
 
 	outResourceEnvs := map[string][]core.EnvVar{}
@@ -398,7 +399,7 @@ func resourceContainer(ppl Pipeline, name string) (core.Container, error) {
 	}
 
 	if name == "transit" {
-		return transitContainer(ppl), nil
+		return ppl.transitContainer(), nil
 	}
 
 	return core.Container{}, fmt.Errorf("there is no resource with name %s", name)

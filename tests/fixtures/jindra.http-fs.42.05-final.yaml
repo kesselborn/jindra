@@ -102,7 +102,6 @@ spec:
       touch /var/lock/jindra/container-jindra-watcher
       touch /var/lock/jindra/container-jindra-resource-out-slack
     image: jindra/tools
-    imagePullPolicy: Always
     name: get-jindra-tools
     resources: {}
     volumeMounts:

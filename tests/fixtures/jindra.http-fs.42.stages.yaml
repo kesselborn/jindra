@@ -149,7 +149,6 @@ data:
           touch /var/lock/jindra/container-jindra-watcher
           touch /var/lock/jindra/container-jindra-resource-out-transit
         image: jindra/tools
-        imagePullPolicy: Always
         name: get-jindra-tools
         resources: {}
         volumeMounts:
@@ -439,7 +438,6 @@ data:
           touch /var/lock/jindra/container-jindra-resource-out-transit
           touch /var/lock/jindra/container-jindra-resource-out-registry-image
         image: jindra/tools
-        imagePullPolicy: Always
         name: get-jindra-tools
         resources: {}
         volumeMounts:
@@ -610,7 +608,6 @@ data:
           touch /var/lock/jindra/container-jindra-watcher
           touch /var/lock/jindra/container-jindra-resource-out-slack
         image: jindra/tools
-        imagePullPolicy: Always
         name: get-jindra-tools
         resources: {}
         volumeMounts:
@@ -778,7 +775,6 @@ data:
           touch /var/lock/jindra/container-jindra-watcher
           touch /var/lock/jindra/container-jindra-resource-out-slack
         image: jindra/tools
-        imagePullPolicy: Always
         name: get-jindra-tools
         resources: {}
         volumeMounts:
@@ -906,7 +902,6 @@ data:
           touch /var/lock/jindra/container-jindra-watcher
           touch /var/lock/jindra/container-jindra-resource-out-slack
         image: jindra/tools
-        imagePullPolicy: Always
         name: get-jindra-tools
         resources: {}
         volumeMounts:

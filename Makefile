@@ -5,6 +5,7 @@ CRD_OPTIONS ?= "crd:trivialVersions=true"
 GO_FILES = $(shell find . -name "*.go")
 NAMESPACE ?= jindra
 DEPLOY_CONFIG ?= deploy.yaml
+TESTS ?= .
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -19,9 +20,14 @@ bin/crij bin/kubectl-podstatus bin/k8s-pod-watcher bin/jindra-cli: ${GO_FILES}
 	go build -o $@ ./cmd/$$(basename $@)
 
 # Run tests
-test: generate fmt vet manifests
+unittests: generate fmt vet manifests
 	rm -rf /tmp/exected /tmp/got
-	go test -v ./... -coverprofile cover.out || { test $$? = 1 -a -e /tmp/expected && code -d /tmp/expected /tmp/got; }
+	go test -run ${TESTS} -v ./api/... -coverprofile cover.out || { test $$? = 1 -a -e /tmp/expected && code -d /tmp/expected /tmp/got; }
+	go test -run ${TESTS} -v ./crij/... -coverprofile cover.out
+	go test -run ${TESTS} -v ./k8spodstatus/... -coverprofile cover.out
+
+test:
+	go test -run ${TESTS} -v ./controller/... -coverprofile cover.out || { test $$? = 1 -a -e /tmp/expected && code -d /tmp/expected /tmp/got; }
 
 # Build manager binary
 manager: bin/manager

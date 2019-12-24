@@ -21,11 +21,11 @@ import (
 	core "k8s.io/api/core/v1"
 )
 
-func semaphoreContainer() core.Container {
+func (ppl Pipeline) semaphoreContainer() core.Container {
 	return core.Container{
 		Name:            setSempahoresContainerName,
 		Image:           setSemaphoresImage,
-		ImagePullPolicy: core.PullIfNotPresent,
+		ImagePullPolicy: ppl.imagePullPolicy(),
 		Command:         []string{"sh", "-xc", "touch " + path.Join(semaphoresPrefixPath, stagesRunningSemaphore)},
 		VolumeMounts: []core.VolumeMount{
 			core.VolumeMount{MountPath: semaphoresPrefixPath, Name: sempahoresMountName},

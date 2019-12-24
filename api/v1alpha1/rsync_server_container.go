@@ -21,11 +21,11 @@ import (
 	core "k8s.io/api/core/v1"
 )
 
-func rsyncServerContainer() core.Container {
+func (ppl Pipeline) rsyncServerContainer() core.Container {
 	return core.Container{
 		Name:            rsyncContainerName,
 		Image:           rsyncImage,
-		ImagePullPolicy: core.PullAlways,
+		ImagePullPolicy: ppl.imagePullPolicy(),
 		VolumeMounts: []core.VolumeMount{
 			core.VolumeMount{MountPath: "/mnt/ssh", Name: "rsync"},
 			core.VolumeMount{MountPath: semaphoresPrefixPath, Name: sempahoresMountName},

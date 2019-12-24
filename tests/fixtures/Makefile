@@ -43,3 +43,6 @@ jindra.http-fs.42.05-final.yaml: ${JINDRA_CLI}
 
 jindra.http-fs.42.stages.yaml: ${JINDRA_CLI}
 	${JINDRA_CLI} -build-no 42 -c pipeline-example.yaml configmap > $@
+
+jindra.http-fs.42.yaml: ${JINDRA_CLI}
+	${JINDRA_CLI} -build-no 42 -c pipeline-example.yaml job > $@

@@ -21,11 +21,11 @@ import (
 	core "k8s.io/api/core/v1"
 )
 
-func getJindraToolsContainer(toolsMount core.VolumeMount, createLocksSrc []string) core.Container {
+func (ppl Pipeline) getJindraToolsContainer(toolsMount core.VolumeMount, createLocksSrc []string) core.Container {
 	return core.Container{
 		Name:            toolsContainerName,
 		Image:           toolsImage,
-		ImagePullPolicy: "Always",
+		ImagePullPolicy: ppl.imagePullPolicy(),
 		VolumeMounts: []core.VolumeMount{
 			{Name: sempahoresMountName, MountPath: semaphoresPrefixPath},
 			toolsMount,

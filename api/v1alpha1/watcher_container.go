@@ -22,10 +22,11 @@ import (
 	core "k8s.io/api/core/v1"
 )
 
-func watcherContainer(stageName, waitFor string, semaphoreMount core.VolumeMount) core.Container {
+func (ppl Pipeline) watcherContainer(stageName, waitFor string, semaphoreMount core.VolumeMount) core.Container {
 	return core.Container{
-		Name:  watcherContainerName,
-		Image: watcherImage,
+		Name:            watcherContainerName,
+		Image:           watcherImage,
+		ImagePullPolicy: ppl.imagePullPolicy(),
 		Args: []string{"sh", "-c", fmt.Sprintf(`printf "waiting for steps to finish "
 containers=$(echo "%s"|sed "s/[,]*%s//g")
 while ! wget -qO- ${MY_IP}:8080/pod/${MY_NAME}.%s?containers=${containers}|grep Completed &>/dev/null

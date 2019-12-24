@@ -21,10 +21,11 @@ import (
 	core "k8s.io/api/core/v1"
 )
 
-func debugContainer(toolsMount, semaphoreMount core.VolumeMount, resourceNames []string) core.Container {
+func (ppl Pipeline) debugContainer(toolsMount, semaphoreMount core.VolumeMount, resourceNames []string) core.Container {
 	c := core.Container{
-		Name:  debugContainerName,
-		Image: "alpine",
+		Name:            debugContainerName,
+		Image:           "alpine",
+		ImagePullPolicy: ppl.imagePullPolicy(),
 		Args: []string{"sh", "-c", `touch /DELETE_ME_TO_STOP_DEBUG_CONTAINER
 echo "waiting for /DELETE_ME_TO_STOP_DEBUG_CONTAINER to be deleted "
 while test -f /DELETE_ME_TO_STOP_DEBUG_CONTAINER
