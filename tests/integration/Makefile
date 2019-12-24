@@ -43,9 +43,9 @@ testreport.html:
 
 .PHONY: load-jindra-images
 load-jindra-images:
-	@for i in jindra $$(cd ../..; ls Dockerfile.*|cut -f2 -d.);               \
-	do                                                                        \
-		CLUSTER_NAME=${CLUSTER_NAME} IMAGE=jindra/$$i make load-image;          \
+	for i in jindra/jindra $$(cd ../..; ls Dockerfile.*|cut -f2 -d.|sed 's/^/jindra\//') $$(cat *.yaml|grep " *image:"|cut -f2- -d:|tr -d " "|uniq); \
+	do                                                                              \
+		CLUSTER_NAME=${CLUSTER_NAME} IMAGE=$$i make load-image;                       \
 	done
 
 load-image:

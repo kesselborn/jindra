@@ -2,6 +2,8 @@ apiVersion: ci.jindra.io/v1alpha1
 kind: Pipeline
 metadata:
   name: transit-test
+  annotations:
+    jindra.io/image-pull-policy: IfNotPresent
 spec:
   stages:
     - metadata:
@@ -12,6 +14,7 @@ spec:
         containers:
           - name: echo1
             image: alpine
+            imagePullPolicy: IfNotPresent
             command: ["touch", "/jindra/resources/transit/one"]
     - metadata:
         name: two
@@ -22,6 +25,7 @@ spec:
         containers:
           - name: echo2
             image: alpine
+            imagePullPolicy: IfNotPresent
             command: ["touch", "/jindra/resources/transit/two"]
     - metadata:
         name: three
@@ -31,4 +35,5 @@ spec:
         containers:
           - name: sleep
             image: alpine
+            imagePullPolicy: IfNotPresent
             command: ["sh", "-c", "sleep 3600"]

@@ -30,7 +30,7 @@ function wait_for_jindra_operator() {
 
   if [ -z "${FIRST_RUN}" ]
   then
-    KUBECONFIG=${KUBECONFIG} NAMESPACE=${NAMESPACE} make -C ../.. install deploy >&2
+    KUSTOMIZE_CONFIG=offline KUBECONFIG=${KUBECONFIG} NAMESPACE=${NAMESPACE} make -C ../.. install deploy >&2
     ${kubectl} apply -f ../fixtures/jindra-runner-permissions.yaml &>2
   fi
 
