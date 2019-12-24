@@ -14,7 +14,7 @@ import (
 )
 
 func configMap(p jindra.Pipeline, buildNo int) {
-	cm, err := jindra.PipelineRunConfigMap(p, buildNo)
+	cm, err := p.PipelineRunConfigMap(buildNo)
 	if err != nil {
 		log.Fatalf("error converting jindra pipeline config to config map for pipeline run: %s", err)
 	}
@@ -31,7 +31,7 @@ func defaulter(p jindra.Pipeline) {
 }
 
 func job(p jindra.Pipeline, buildNo int) {
-	job, err := jindra.PipelineRunJob(p, buildNo)
+	job, err := p.PipelineRunJob(buildNo)
 	if err != nil {
 		log.Fatalf("error converting jindra pipeline config to job for pipeline run: %s", err)
 	}
@@ -41,7 +41,7 @@ func job(p jindra.Pipeline, buildNo int) {
 }
 
 func secret(p jindra.Pipeline, buildNo int) {
-	secret, err := jindra.NewRsyncSSHSecret(p, buildNo)
+	secret, err := p.NewRsyncSSHSecret(buildNo)
 	if err != nil {
 		log.Fatalf("error converting jindra pipeline config to secret for pipeline run: %s", err)
 	}
@@ -51,7 +51,7 @@ func secret(p jindra.Pipeline, buildNo int) {
 }
 
 func stage(p jindra.Pipeline, buildNo int, stageKey string) {
-	cm, err := jindra.PipelineRunConfigMap(p, buildNo)
+	cm, err := p.PipelineRunConfigMap(buildNo)
 	if err != nil {
 		log.Fatalf("error converting jindra pipeline config to config map for pipeline run: %s", err)
 	}
@@ -66,7 +66,7 @@ func stage(p jindra.Pipeline, buildNo int, stageKey string) {
 }
 
 func stageNames(p jindra.Pipeline, buildNo int) {
-	cm, err := jindra.PipelineRunConfigMap(p, buildNo)
+	cm, err := p.PipelineRunConfigMap(buildNo)
 	if err != nil {
 		log.Fatalf("error converting jindra pipeline config to config map for pipeline run: %s", err)
 	}

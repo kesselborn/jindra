@@ -65,9 +65,8 @@ func NewPipelineFromYaml(yamlData []byte) (Pipeline, error) {
 	return p, nil
 }
 
-// TODO: functions -> methods when ppl is first parameter
 // PipelineRunJob creates the job that runs the pipeline
-func PipelineRunJob(ppl Pipeline, buildNo int) (batch.Job, error) {
+func (ppl Pipeline) PipelineRunJob(buildNo int) (batch.Job, error) {
 	backoffLimit := int32(0)
 
 	return batch.Job{
@@ -126,8 +125,8 @@ func PipelineRunJob(ppl Pipeline, buildNo int) (batch.Job, error) {
 
 // PipelineRunConfigMap creates the config map that the pipeline job uses
 // to create the stage pods
-func PipelineRunConfigMap(ppl Pipeline, buildNo int) (core.ConfigMap, error) {
-	configs, err := generateStagePods(ppl, buildNo)
+func (ppl Pipeline) PipelineRunConfigMap(buildNo int) (core.ConfigMap, error) {
+	configs, err := ppl.generateStagePods(buildNo)
 	if err != nil {
 		return core.ConfigMap{}, err
 	}
@@ -152,7 +151,7 @@ func PipelineRunConfigMap(ppl Pipeline, buildNo int) (core.ConfigMap, error) {
 
 // NewRsyncSSHSecret creates a Kubernetes Secret with a public (key: pub) and
 // private ssh key (key: priv)
-func NewRsyncSSHSecret(ppl Pipeline, buildNo int) (core.Secret, error) {
+func (ppl Pipeline) NewRsyncSSHSecret(buildNo int) (core.Secret, error) {
 	privateKey, publicKey, err := generateSSHKeyPair()
 	if err != nil {
 		return core.Secret{}, fmt.Errorf("error creating keypair: %s", err)
@@ -175,7 +174,7 @@ func NewRsyncSSHSecret(ppl Pipeline, buildNo int) (core.Secret, error) {
 	}, nil
 }
 
-func generateStagePods(ppl Pipeline, buildNo int) (stagePods, error) {
+func (ppl Pipeline) generateStagePods(buildNo int) (stagePods, error) {
 	config := stagePods{}
 	ppl.Status.BuildNo = buildNo
 
@@ -194,9 +193,9 @@ func generateStagePods(ppl Pipeline, buildNo int) (stagePods, error) {
 
 		stage.Annotations[waitForAnnotationKey] = strings.Join(generateWaitForAnnotation(stage), ",")
 
-		stage.Spec.Containers = generateStageContainers(stage, stageName, strings.Join(generateWaitForAnnotation(stage), ","), ppl)
+		stage.Spec.Containers = ppl.generateStageContainers(stage, stageName, strings.Join(generateWaitForAnnotation(stage), ","))
 		var err error
-		if stage.Spec.InitContainers, err = generateStageInitContainers(stage, ppl); err != nil {
+		if stage.Spec.InitContainers, err = ppl.generateStageInitContainers(stage); err != nil {
 			return stagePods{}, fmt.Errorf("error constructing init containers: %s", err)
 		}
 
@@ -228,7 +227,7 @@ func generateStagePods(ppl Pipeline, buildNo int) (stagePods, error) {
 // - init containers defined in the pipeline
 // - a container which copies jindra tools into a shared volume
 // - in resource containers
-func generateStageInitContainers(p core.Pod, ppl Pipeline) ([]core.Container, error) {
+func (ppl Pipeline) generateStageInitContainers(p core.Pod) ([]core.Container, error) {
 	createLocksSrc := []string{
 		"touch " + path.Join(semaphoresPrefixPath, "steps-running"),
 		"touch " + path.Join(semaphoresPrefixPath, "outputs-running"),
@@ -255,7 +254,7 @@ func generateStageInitContainers(p core.Pod, ppl Pipeline) ([]core.Container, er
 	}
 
 	for _, inName := range inResourcesNames(p) {
-		c, err := resourceContainer(ppl, inName)
+		c, err := ppl.resourceContainer(inName)
 		if err != nil {
 			// TODO: use logger
 			fmt.Fprintf(os.Stderr, "error creating init container: %s", err)
@@ -326,7 +325,7 @@ func generateStageInitContainers(p core.Pod, ppl Pipeline) ([]core.Container, er
 // - out resource containers
 // - jindra watch container which deletes semaphores once other containers are finished
 // - debug container if debugging annotation was set
-func generateStageContainers(p core.Pod, stageName string, waitFor string, ppl Pipeline) []core.Container {
+func (ppl Pipeline) generateStageContainers(p core.Pod, stageName string, waitFor string) []core.Container {
 	toolsMount := core.VolumeMount{Name: toolsMountName, MountPath: toolsPrefixPath, ReadOnly: true}
 	semaphoreMount := core.VolumeMount{Name: sempahoresMountName, MountPath: semaphoresPrefixPath}
 
@@ -349,7 +348,7 @@ func generateStageContainers(p core.Pod, stageName string, waitFor string, ppl P
 	}
 
 	for _, outName := range outResourcesNames(p) {
-		c, err := resourceContainer(ppl, outName)
+		c, err := ppl.resourceContainer(outName)
 		if err != nil {
 			// TODO: use logger
 			fmt.Fprintf(os.Stderr, "error creating init container: %s", err)
@@ -391,7 +390,7 @@ func generateStageContainers(p core.Pod, stageName string, waitFor string, ppl P
 	return containers
 }
 
-func resourceContainer(ppl Pipeline, name string) (core.Container, error) {
+func (ppl Pipeline) resourceContainer(name string) (core.Container, error) {
 	for _, c := range ppl.Spec.Resources.Containers {
 		if c.Name == name {
 			return c, nil

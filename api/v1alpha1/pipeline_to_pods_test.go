@@ -54,7 +54,7 @@ func TestBasicUnmarshalingTest(t *testing.T) {
 }
 
 func TestJob(t *testing.T) {
-	job, _ := PipelineRunJob(getExamplePipeline(t), 42)
+	job, _ := getExamplePipeline(t).PipelineRunJob(42)
 	expected := *jobFileContents(path.Join(fixtureDir, "jindra.http-fs.42.yaml"), t)
 
 	if !reflect.DeepEqual(expected, job) {
@@ -63,7 +63,7 @@ func TestJob(t *testing.T) {
 }
 
 func TestConfigMap(t *testing.T) {
-	configMap, _ := PipelineRunConfigMap(getExamplePipeline(t), 42)
+	configMap, _ := getExamplePipeline(t).PipelineRunConfigMap(42)
 	expected := *configMapFileContents(path.Join(fixtureDir, "jindra.http-fs.42.stages.yaml"), t)
 
 	if !reflect.DeepEqual(expected, configMap) {
@@ -72,7 +72,7 @@ func TestConfigMap(t *testing.T) {
 }
 
 func TestRsyncSSHSecret(t *testing.T) {
-	secret, _ := NewRsyncSSHSecret(getExamplePipeline(t), 42)
+	secret, _ := getExamplePipeline(t).NewRsyncSSHSecret(42)
 	expected := *secretFileContents(path.Join(fixtureDir, "jindra.http-fs.42.rsync-keys.yaml"), t)
 
 	// we need to cheat a little bit here, as the keys themselves will always differ
@@ -86,7 +86,7 @@ func TestRsyncSSHSecret(t *testing.T) {
 }
 
 func TestStageConfigs(t *testing.T) {
-	configs, configsErr := generateStagePods(getExamplePipeline(t), 42)
+	configs, configsErr := getExamplePipeline(t).generateStagePods(42)
 
 	for i, test := range []struct {
 		got         interface{}
@@ -118,7 +118,7 @@ func TestWaitForDebugContainer(t *testing.T) {
 		}
 	}
 
-	configs, _ := generateStagePods(ppl, 42)
+	configs, _ := ppl.generateStagePods(42)
 	waitForAnnotation := configs["02-build-docker-image.yaml"].ObjectMeta.Annotations[waitForAnnotationKey]
 
 	expected := "build-docker-image,jindra-debug-container"
@@ -133,7 +133,7 @@ func TestInvalidFirstContainer(t *testing.T) {
 	ppl := getExamplePipeline(t)
 	ppl.Spec.Stages[0].Annotations[firstInitContainers] = "xxxxxxxx"
 
-	_, err := generateStagePods(ppl, 42)
+	_, err := ppl.generateStagePods(42)
 	expected := fmt.Errorf("error constructing init containers: defined firstInitContainer xxxxxxxx not found in pipeline definition")
 
 	if !reflect.DeepEqual(expected, err) {
@@ -192,8 +192,8 @@ func TestImagePullPolicyIfNotPresent(t *testing.T) {
 	ppl := getExamplePipeline(t)
 	ppl.Annotations[imagePullPolicyAnnotationKey] = string(core.PullIfNotPresent)
 
-	stages, _ := generateStagePods(ppl, 42)
-	job, _ := PipelineRunJob(ppl, 42)
+	stages, _ := ppl.generateStagePods(42)
+	job, _ := ppl.PipelineRunJob(42)
 
 	containers := getJindraContainers(stages)
 	containers = append(containers, collectJindraContainers(append(job.Spec.Template.Spec.InitContainers, job.Spec.Template.Spec.Containers...))...)
@@ -213,8 +213,8 @@ func TestImagePullPolicyAlways(t *testing.T) {
 	ppl := getExamplePipeline(t)
 	ppl.Annotations[imagePullPolicyAnnotationKey] = string(core.PullAlways)
 
-	stages, _ := generateStagePods(ppl, 42)
-	job, _ := PipelineRunJob(ppl, 42)
+	stages, _ := ppl.generateStagePods(42)
+	job, _ := ppl.PipelineRunJob(42)
 
 	containers := getJindraContainers(stages)
 	containers = append(containers, collectJindraContainers(append(job.Spec.Template.Spec.InitContainers, job.Spec.Template.Spec.Containers...))...)
