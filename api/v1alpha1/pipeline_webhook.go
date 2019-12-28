@@ -23,12 +23,13 @@ import (
 )
 
 // log is for logging in this package.
-var pipelinelog = logf.Log.WithName("pipeline-resource")
+var webhLog = logf.Log.WithName("pipeline-webook")
 
-func (r *Pipeline) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	pipelinelog.Info("Setting up Webhook")
+// SetupWebhookWithManager registeres this webhook with a manager
+func (ppl *Pipeline) SetupWebhookWithManager(mgr ctrl.Manager) error {
+	webhLog.Info("Setting up Webhook")
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(r).
+		For(ppl).
 		Complete()
 }
 
@@ -39,10 +40,10 @@ func (r *Pipeline) SetupWebhookWithManager(mgr ctrl.Manager) error {
 var _ webhook.Defaulter = &Pipeline{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type
-func (r *Pipeline) Default() {
-	pipelinelog.Info("calling defaulter for ", "name", r.Name)
+func (ppl *Pipeline) Default() {
+	webhLog.Info("calling defaulter for ", "pipeline", ppl.Name)
 
-	r.SetDefaults()
+	ppl.SetDefaults()
 }
 
 // TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
@@ -51,24 +52,21 @@ func (r *Pipeline) Default() {
 var _ webhook.Validator = &Pipeline{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *Pipeline) ValidateCreate() error {
-	pipelinelog.Info("validate create", "name", r.Name)
-
-	// TODO(user): fill in your validation logic upon object creation.
-	return nil
+func (ppl *Pipeline) ValidateCreate() error {
+	webhLog.Info("calling create validator for ", "pipeline", ppl.Name)
+	return ppl.Validate()
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *Pipeline) ValidateUpdate(old runtime.Object) error {
-	pipelinelog.Info("validate update", "name", r.Name)
-
-	// TODO(user): fill in your validation logic upon object update.
-	return nil
+func (ppl *Pipeline) ValidateUpdate(old runtime.Object) error {
+	webhLog.Info("calling update validator for ", "pipeline", ppl.Name)
+	return ppl.Validate()
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *Pipeline) ValidateDelete() error {
-	pipelinelog.Info("validate delete", "name", r.Name)
+func (ppl *Pipeline) ValidateDelete() error {
+	// webhLog.Info("calling delete validator for ", "pipeline", ppl.Name)
+	webhLog.Info("delete validator not implemented", "pipeline", ppl.Name)
 
 	// TODO(user): fill in your validation logic upon object deletion.
 	return nil
