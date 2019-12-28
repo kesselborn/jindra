@@ -19,7 +19,7 @@ it_should_set_default_values() {
   assert_true "${kubectl} apply --wait -f internal-modifications-test.yaml"
   defer "${kubectl} delete pipeline internal-modification-test"
 
-  local src=$(${kubectl} get jindrapipeline internal-modifications-test -oyaml)
+  local src=$(${kubectl} get pipeline internal-modifications-test -oyaml)
   assert_match "${src}" "restartPolicy: Never"
   assert_match "${src}" 'jindra.io/build-no-offset: "0"'
 }
