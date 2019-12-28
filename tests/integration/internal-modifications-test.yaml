@@ -10,4 +10,5 @@ spec:
         containers:
           - name: test
             image: alpine
+            imagePullPolicy: IfNotPresent
             command: ["sh", "-c", "sleep 3600"]
