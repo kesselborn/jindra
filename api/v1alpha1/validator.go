@@ -30,7 +30,7 @@ func (ppl Pipeline) Validate() error {
 		ppl.noDuplicateResourceAnnotations,
 		ppl.noDuplicateResourceNames,
 		ppl.noOwnerReference,
-		ppl.resourcesExist,
+		ppl.referencedResourcesExist,
 		ppl.serviceExist,
 		ppl.triggerHasResource,
 		ppl.triggerIsInResourceOfFirstStage,
@@ -41,13 +41,18 @@ func (ppl Pipeline) Validate() error {
 		}
 	}
 
+	valLog.Info("validation successful", "pipeline", ppl.Name)
 	return nil
 }
 
-var valLog = logf.Log.WithName("jindra-validator")
+var valLog = logf.Log.WithName("pipeline-validator")
+
+func printValidationError(ppl Pipeline, err error) error {
+	valLog.Info("validation failed", "pipeline", ppl.Name, "error", err.Error())
+	return err
+}
 
 func (ppl Pipeline) triggerHasResource() error {
-	valLog.Info("validation: triggerHasResource")
 	containerNames := map[string]bool{}
 	for _, resource := range ppl.Spec.Resources.Containers {
 		containerNames[resource.Name] = true
@@ -55,56 +60,56 @@ func (ppl Pipeline) triggerHasResource() error {
 
 	for _, trigger := range ppl.Spec.Resources.Triggers {
 		if _, ok := containerNames[trigger.Name]; !ok && trigger.Name != "" {
-			return fmt.Errorf("there is no resource for trigger '%s'", trigger.Name)
+			return printValidationError(ppl, fmt.Errorf("there is no resource for trigger '%s'", trigger.Name))
 		}
 	}
 
+	valLog.Info("validated triggerHasResource", "pipeline", ppl.Name)
 	return nil
 }
 
 func (ppl Pipeline) triggerIsInResourceOfFirstStage() error {
-	valLog.Info("validation: triggerIsInResourceOfFirstStage")
 	stage1InResourcesArray := strings.Split(ppl.Spec.Stages[0].Annotations[inResourceAnnotationKey], ",")
 	stage1InResources := arrayToSet(stage1InResourcesArray)
 
 	for _, trigger := range ppl.Spec.Resources.Triggers {
 		if _, ok := stage1InResources[trigger.Name]; !ok && trigger.Name != "" {
-			return fmt.Errorf("invalid trigger '%s': every trigger needs to be an input resource of the first stage", trigger.Name)
+			return printValidationError(ppl, fmt.Errorf("invalid trigger '%s': every trigger needs to be an input resource of the first stage", trigger.Name))
 		}
 	}
 
+	valLog.Info("validated triggerIsInResourceOfFirstStage", "pipeline", ppl.Name)
 	return nil
 }
 func (ppl Pipeline) noDuplicateResourceAnnotations() error {
-	valLog.Info("validation: noDuplicateResourceAnnotations")
 	for _, stage := range ppl.allPods() {
 		if duplicate := findDuplicate(strings.Split(stage.Annotations[inResourceAnnotationKey], ",")); duplicate != "" {
-			return fmt.Errorf("stage '%s' uses the input resource '%s' twice", stage.Name, duplicate)
+			return printValidationError(ppl, fmt.Errorf("stage '%s' uses the input resource '%s' twice", stage.Name, duplicate))
 		}
 		if duplicate := findDuplicate(strings.Split(stage.Annotations[outResourceAnnotationKey], ",")); duplicate != "" {
-			return fmt.Errorf("stage '%s' uses the output resource '%s' twice", stage.Name, duplicate)
+			return printValidationError(ppl, fmt.Errorf("stage '%s' uses the output resource '%s' twice", stage.Name, duplicate))
 		}
 	}
 
+	valLog.Info("validated noDuplicateResourceAnnotations", "pipeline", ppl.Name)
 	return nil
 }
 
 func (ppl Pipeline) noDuplicateResourceNames() error {
-	valLog.Info("validation: noDuplicateResourceNames")
 	containerNames := []string{}
 	for _, container := range ppl.Spec.Resources.Containers {
 		containerNames = append(containerNames, container.Name)
 	}
 
 	if duplicate := findDuplicate(containerNames); duplicate != "" {
-		return fmt.Errorf("resource name '%s' is used twice", duplicate)
+		return printValidationError(ppl, fmt.Errorf("resource name '%s' is used twice", duplicate))
 	}
 
+	valLog.Info("validated noDuplicateResourceNames", "pipeline", ppl.Name)
 	return nil
 }
 
-func (ppl Pipeline) resourcesExist() error {
-	valLog.Info("validation: resourcesExist")
+func (ppl Pipeline) referencedResourcesExist() error {
 	resourceNames := map[string]bool{"transit": true}
 
 	for _, container := range ppl.Spec.Resources.Containers {
@@ -114,21 +119,21 @@ func (ppl Pipeline) resourcesExist() error {
 	for _, stage := range ppl.allPods() {
 		for _, resource := range strings.Split(stage.Annotations[inResourceAnnotationKey], ",") {
 			if _, ok := resourceNames[resource]; !ok && resource != "" {
-				return fmt.Errorf("input resource '%s' referenced in stage '%s' does not exist", resource, stage.Name)
+				return printValidationError(ppl, fmt.Errorf("input resource '%s' referenced in stage '%s' does not exist", resource, stage.Name))
 			}
 		}
 		for _, resource := range strings.Split(stage.Annotations[outResourceAnnotationKey], ",") {
 			if _, ok := resourceNames[resource]; !ok && resource != "" {
-				return fmt.Errorf("output resource '%s' referenced in stage '%s' does not exist", resource, stage.Name)
+				return printValidationError(ppl, fmt.Errorf("output resource '%s' referenced in stage '%s' does not exist", resource, stage.Name))
 			}
 		}
 	}
 
+	valLog.Info("validated referencedResourcesExist", "pipeline", ppl.Name)
 	return nil
 }
 
 func (ppl Pipeline) serviceExist() error {
-	valLog.Info("validation: serviceExist")
 	for _, stage := range ppl.allPods() {
 		if services := strings.Split(stage.Annotations[servicesAnnotationKey], ","); len(services) > 1 && services[0] != "" {
 			containers := map[string]bool{}
@@ -137,48 +142,51 @@ func (ppl Pipeline) serviceExist() error {
 			}
 			for _, service := range services {
 				if _, ok := containers[service]; !ok {
-					return fmt.Errorf("service container '%s' referenced in stage '%s' does not exist", service, stage.Name)
+					return printValidationError(ppl, fmt.Errorf("service container '%s' referenced in stage '%s' does not exist", service, stage.Name))
 				}
 			}
 		}
 	}
 
+	valLog.Info("validated serviceExist", "pipeline", ppl.Name)
 	return nil
 }
 
 func (ppl Pipeline) noOwnerReference() error {
-	valLog.Info("validation: noOwnerReference")
 	for _, stage := range ppl.allPods() {
 		if len(stage.OwnerReferences) > 0 {
-			return fmt.Errorf("stage '%s' must not have an owner reference", stage.Name)
+			return printValidationError(ppl, fmt.Errorf("stage '%s' must not have an owner reference", stage.Name))
 		}
 	}
 
+	valLog.Info("validated noOwnerReference", "pipeline", ppl.Name)
 	return nil
 }
 
 func (ppl Pipeline) correctOrNoRestartPolicy() error {
-	valLog.Info("validation: correctOrNoRestartPolicy")
 	for _, stage := range ppl.allPods() {
 		if stage.Spec.RestartPolicy != core.RestartPolicyNever && stage.Spec.RestartPolicy != "" {
-			return fmt.Errorf(`restartPolicy of stage '%s' must not be set or set to "Never"`, stage.Name)
+			return printValidationError(ppl, fmt.Errorf(`restartPolicy of stage '%s' must not be set or set to "Never"`, stage.Name))
 		}
 	}
 
+	valLog.Info("validated correctOrNoRestartPolicy", "pipeline", ppl.Name)
 	return nil
 }
 
 func (ppl Pipeline) validImagePullPolicyAnnotation() error {
 	if ppl.Annotations == nil {
+		valLog.Info("validated correctOrNoRestartPolicy", "pipeline", ppl.Name)
 		return nil
 	}
 
 	v := ppl.Annotations[imagePullPolicyAnnotationKey]
 	if v == "" || v == string(core.PullAlways) || v == string(core.PullIfNotPresent) || v == string(core.PullNever) {
+		valLog.Info("validated correctOrNoRestartPolicy", "pipeline", ppl.Name)
 		return nil
 	}
 
-	return fmt.Errorf("invalid pull policy '%s'", v)
+	return printValidationError(ppl, fmt.Errorf("invalid pull policy '%s'", v))
 }
 
 func findDuplicate(words []string) string {
@@ -207,9 +215,9 @@ func arrayToSet(words []string) map[string]bool {
 func (ppl Pipeline) allPods() []core.Pod {
 	pods := ppl.Spec.Stages
 
-	for _, pod := range append([]core.Pod{ppl.Spec.OnSuccess}, ppl.Spec.OnError, ppl.Spec.Final) {
-		if pod.Name != "" {
-			pods = append(pods, pod)
+	for _, pod := range append([]*core.Pod{ppl.Spec.OnSuccess}, ppl.Spec.OnError, ppl.Spec.Final) {
+		if pod != nil {
+			pods = append(pods, *pod)
 		}
 	}
 
