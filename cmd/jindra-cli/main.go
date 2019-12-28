@@ -11,6 +11,8 @@ import (
 
 	"github.com/ghodss/yaml"
 	jindra "github.com/kesselborn/jindra/api/v1alpha1"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
 
 func configMap(p jindra.Pipeline, buildNo int) {
@@ -88,9 +90,10 @@ func validate(p jindra.Pipeline) {
 }
 
 func main() {
+	buildNo := flag.Int("build-no", 42, "build number")
 	config := flag.String("c", "", "jindra pipeline config (use '-c -' for reading from stdin)")
 	help := flag.Bool("h", false, "show help text")
-	buildNo := flag.Int("build-no", 42, "build number")
+	verbose := flag.Bool("v", false, "verbose output")
 
 	flag.Usage = func() {
 		fmt.Printf(`
@@ -113,6 +116,12 @@ Options:
 	}
 
 	flag.Parse()
+
+	if *verbose {
+		logf.SetLogger(zap.New(func(o *zap.Options) {
+			o.Development = true
+		}))
+	}
 
 	usage := func(success bool) {
 		exitCode := 0
