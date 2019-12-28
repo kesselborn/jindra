@@ -4,7 +4,7 @@ it_should_reject_invalid_pipeline() {
   defer "${kubectl} delete pipeline internal-validation-test"
 
   assert_eq "${res}" \
-    "Error from server (input resource 'git' referenced in stage 'one' does not exist): error when creating \"internal-validation-test.yaml\": admission webhook \"validating.jindra.io\" denied the request: input resource 'git' referenced in stage 'one' does not exist"
+    "Error from server (input resource 'git' referenced in stage 'one' does not exist): error when creating \"internal-validation-test.yaml\": admission webhook \"validator.jindra.io\" denied the request: input resource 'git' referenced in stage 'one' does not exist"
 }
 
 # this should be triggered by standard kubernetes pod validation
@@ -28,7 +28,7 @@ it_should_update_pipeline() {
   local res=$(${kubectl} apply --wait -f minimal-pipeline.yaml 2>&1)
   defer "${kubectl} delete pipeline minimal-pipeline"
 
-  cat minimal-pipeline.yaml |sed 's/one/two/g'|${kubectl} apply --wait -f-
+  cat minimal-pipeline.yaml | sed 's/one/two/g' | ${kubectl} apply --wait -f-
   assert_eq "$?" "0"
 
   local src=$(${kubectl} get jindrapipeline minimal-pipeline -oyaml)
