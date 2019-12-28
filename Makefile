@@ -22,17 +22,17 @@ bin/crij bin/kubectl-podstatus bin/k8s-pod-watcher bin/jindra-cli: ${GO_FILES}
 # Run tests
 unittests: generate fmt vet manifests
 	rm -rf /tmp/exected /tmp/got
-	go test -run ${TESTS} -v ./api/... -coverprofile cover.out || { test $$? = 1 -a -e /tmp/expected && code -d /tmp/expected /tmp/got; }
+	go test -run ${TESTS} -v ./api/... -coverprofile cover.out || { test $$? -eq 1 -a -e /tmp/expected && code -d /tmp/expected /tmp/got; exit 1; }
 	go test -run ${TESTS} -v ./crij/... -coverprofile cover.out
 	go test -run ${TESTS} -v ./k8spodstatus/... -coverprofile cover.out
 
-test:
-	go test -run ${TESTS} -v ./controller/... -coverprofile cover.out || { test $$? = 1 -a -e /tmp/expected && code -d /tmp/expected /tmp/got; }
+test: unittests
+	go test -run ${TESTS} -v ./controllers/... -coverprofile cover.out || { test $$? = 1 -a -e /tmp/expected && code -d /tmp/expected /tmp/got; }
 
 # Build manager binary
 manager: bin/manager
 
-bin/manager: generate fmt vet
+bin/manager: manifests generate fmt vet ${GO_FILES}
 	go build -o bin/manager main.go
 
 # Run against the configured Kubernetes cluster in ~/.kube/config
@@ -85,7 +85,7 @@ generate: controller-gen
 	$(CONTROLLER_GEN) object:headerFile=./hack/boilerplate.go.txt paths="./..."
 
 # Build the docker image
-docker-build: test
+docker-build: unittests
 	docker build . -t ${IMG}
 
 # Push the docker image
