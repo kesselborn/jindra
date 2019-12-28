@@ -53,19 +53,19 @@ type PipelineSpec struct {
 
 	// Pod that should be executed if all stages finished successfully
 	// +optional
-	// +kubebuilder:validation:EmbeddedResource
-	OnSuccess core.Pod `json:"onSuccess,omitempty"`
+	// +kubebuilder:validation:Optional
+	OnSuccess *core.Pod `json:"onSuccess,omitempty"`
 
 	// Pod that should be executed if an error ocurred in any stage
 	// +optional
-	// +kubebuilder:validation:EmbeddedResource
-	OnError core.Pod `json:"onError,omitempty"`
+	// +kubebuilder:validation:Optional
+	OnError *core.Pod `json:"onError,omitempty"`
 
 	// Pod that should be executed if the pipeline finised (regardless whether it was
 	// successful or not
 	// +optional
-	// +kubebuilder:validation:EmbeddedResource
-	Final core.Pod `json:"final,omitempty"`
+	// +kubebuilder:validation:Optional
+	Final *core.Pod `json:"final,omitempty"`
 }
 
 // Resources defines a pipeline resources for new versions should be done

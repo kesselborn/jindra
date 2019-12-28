@@ -178,7 +178,14 @@ func (ppl Pipeline) generateStagePods(buildNo int) (stagePods, error) {
 	config := stagePods{}
 	ppl.Status.BuildNo = buildNo
 
-	for i, stage := range append(ppl.Spec.Stages, ppl.Spec.OnSuccess, ppl.Spec.OnError, ppl.Spec.Final) {
+	pods := ppl.Spec.Stages
+	for _, stage := range []*core.Pod{ppl.Spec.OnSuccess, ppl.Spec.OnError, ppl.Spec.Final} {
+		if stage != nil {
+			pods = append(pods, *stage)
+		}
+	}
+
+	for i, stage := range pods {
 		if stage.Name == "" && stage.Annotations == nil {
 			continue
 		}
