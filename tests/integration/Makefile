@@ -9,6 +9,8 @@ TEST_ARGS = KUBECONFIG=${KUBECONFIG}                                       \
             NO_ANSI_COLOR=${NO_ANSI_COLOR}                                 \
             FAIL_FAST=${FAIL_FAST}
 
+default: testreport.html
+
 kind:
 	curl -Lo ./kind https://github.com/kubernetes-sigs/kind/releases/download/v0.6.1/kind-$$(uname)-amd64
 	chmod +x ./kind
@@ -38,12 +40,16 @@ testreport.html:
 		res=$$?;                                                                 \
 		cat testreport.log | go-junit-report > testreport.xml;                   \
 		./junit2html testreport.xml > testreport.html;                           \
-		kubectl --kubeconfig=${KUBECONFIG} delete --wait --filename deploy.yaml  \
+		kubectl --kubeconfig=${KUBECONFIG} delete --wait --filename deploy.yaml; \
 		test $$res -eq 0
 
+.manager-image: ${shell find ../.. -name "*.go"}
+	make -C ../.. docker-build
+	touch $@
+
 .PHONY: load-jindra-images
-load-jindra-images:
-	for i in jindra/jindra $$(cd ../..; ls Dockerfile.*|cut -f2 -d.|sed 's/^/jindra\//') $$(cat *.yaml|grep " *image:"|cut -f2- -d:|tr -d " "|uniq); \
+load-jindra-images: .manager-image
+	@for i in jindra/jindra $$(cd ../..; ls Dockerfile.*|cut -f2 -d.|sed 's/^/jindra\//') $$(cat *.yaml|grep " *image:"|cut -f2- -d:|tr -d " "|uniq); \
 	do                                                                              \
 		CLUSTER_NAME=${CLUSTER_NAME} IMAGE=$$i make load-image;                       \
 	done

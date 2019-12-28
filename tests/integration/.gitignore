@@ -2,3 +2,4 @@
 /kind
 /kind.kubeconfig
 /testreport.*
+/.manager-image
