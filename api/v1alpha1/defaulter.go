@@ -17,57 +17,78 @@ package v1alpha1
 
 import (
 	core "k8s.io/api/core/v1"
+	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
 
+// log is for logging in this package.
+var defLog = logf.Log.WithName("pipeline-defaulter")
+
 // SetDefaults sets sane default values if not set already
-func (ppl *Pipeline) SetDefaults() []interface{} {
-	modifiedItems := []interface{}{}
-	// only set name if final is actually set (annotations or containers are set)
-	if (len(ppl.Spec.Final.Annotations) > 0 || len(ppl.Spec.Final.Spec.Containers) > 0) && ppl.Spec.Final.Name == "" {
-		modifiedItems = append(modifiedItems, "final/name", "final")
+func (ppl *Pipeline) SetDefaults() {
+	for _, f := range []func(){
+		ppl.setDefaultNames,
+		ppl.setDefaultTriggerSchedule,
+		ppl.setBuildNoOffset,
+		ppl.setRestartPolicies,
+	} {
+		f()
+	}
+}
+
+func (ppl *Pipeline) setDefaultNames() {
+	if ppl.Spec.Final != nil && ppl.Spec.Final.Name == "" {
+		defLog.Info("adding name for final stage", "pipeline", ppl.Name, "stage", "final")
 		ppl.Spec.Final.Name = "final"
 	}
 
-	// only set name if on-error is actually set (annotations or containers are set)
-	if (len(ppl.Spec.OnError.Annotations) > 0 || len(ppl.Spec.OnError.Spec.Containers) > 0) && ppl.Spec.OnError.Name == "" {
-		modifiedItems = append(modifiedItems, "on-error/name", "on-error")
+	if ppl.Spec.OnError != nil && ppl.Spec.OnError.Name == "" {
+		defLog.Info("adding name for onError stage", "pipeline", ppl.Name, "stage", "onError")
 		ppl.Spec.OnError.Name = "on-error"
 	}
 
-	// only set name if on-success is actually set (annotations or containers are set)
-	if (len(ppl.Spec.OnSuccess.Annotations) > 0 || len(ppl.Spec.OnSuccess.Spec.Containers) > 0) && ppl.Spec.OnSuccess.Name == "" {
-		modifiedItems = append(modifiedItems, "on-success/name", "on-success")
+	if ppl.Spec.OnSuccess != nil && ppl.Spec.OnSuccess.Name == "" {
+		defLog.Info("adding name for onError stage", "pipeline", ppl.Name, "stage", "onError")
 		ppl.Spec.OnSuccess.Name = "on-success"
 	}
+}
 
-	for i := 0; i < len(ppl.Spec.Resources.Triggers); i++ {
-		if ppl.Spec.Resources.Triggers[i].Schedule == "" {
-			modifiedItems = append(modifiedItems, "trigger/"+ppl.Spec.Resources.Triggers[i].Name+"/name/schedule", "/5 * * * *")
-			ppl.Spec.Resources.Triggers[i].Schedule = "/5 * * * *"
+func (ppl *Pipeline) setDefaultTriggerSchedule() {
+	if ppl.Spec.Resources.Triggers != nil {
+		for i := 0; i < len(ppl.Spec.Resources.Triggers); i++ {
+			trigger := ppl.Spec.Resources.Triggers[i]
+			if trigger.Schedule == "" {
+				defLog.Info("setting default trigger schedule", "pipeline", ppl.Name, "trigger", trigger.Name)
+				ppl.Spec.Resources.Triggers[i].Schedule = "/5 * * * *"
+			}
 		}
 	}
+}
 
+func (ppl *Pipeline) setBuildNoOffset() {
 	if ppl.Annotations == nil {
+		defLog.Info("adding annotations map", "pipeline", ppl.Name)
 		ppl.Annotations = map[string]string{}
 	}
 	if ppl.Annotations[buildNoOffsetAnnotationKey] == "" {
-		modifiedItems = append(modifiedItems, "/build-offset", "0")
+		defLog.Info("adding build no offset", "pipeline", ppl.Name)
 		ppl.Annotations[buildNoOffsetAnnotationKey] = "0"
 	}
 
+}
+
+func (ppl *Pipeline) setRestartPolicies() {
 	for i := 0; i < len(ppl.Spec.Stages); i++ {
 		if ppl.Spec.Stages[i].Spec.RestartPolicy == core.RestartPolicy("") {
-			modifiedItems = append(modifiedItems, "/stage/"+ppl.Spec.Stages[i].Name+"/restart-policy", "never")
+			stage := ppl.Spec.Stages[i]
+			defLog.Info("setting restart policy", "pipeline", ppl.Name, "stage", stage.Name, "policy", core.RestartPolicyNever)
 			ppl.Spec.Stages[i].Spec.RestartPolicy = core.RestartPolicyNever
 		}
-
 	}
-	for _, pod := range []*core.Pod{&ppl.Spec.OnSuccess, &ppl.Spec.OnError, &ppl.Spec.Final} {
-		if (len(pod.Spec.Containers) > 0) && pod.Spec.RestartPolicy == core.RestartPolicy("") {
-			modifiedItems = append(modifiedItems, "/stage/"+pod.Name+"/restart-policy", "never")
+
+	for _, pod := range []*core.Pod{ppl.Spec.OnSuccess, ppl.Spec.OnError, ppl.Spec.Final} {
+		if (pod != nil && len(pod.Spec.Containers) > 0) && pod.Spec.RestartPolicy == core.RestartPolicy("") {
+			defLog.Info("setting restart policy", "pipeline", ppl.Name, "stage", pod.Name, "policy", core.RestartPolicyNever)
 			pod.Spec.RestartPolicy = core.RestartPolicyNever
 		}
 	}
-
-	return modifiedItems
 }
