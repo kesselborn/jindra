@@ -24,7 +24,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	civ1alpha1 "github.com/kesselborn/jindra/api/v1alpha1"
+	jindra "github.com/kesselborn/jindra/api/v1alpha1"
 )
 
 // PipelineReconciler reconciles a Pipeline object
@@ -46,9 +46,9 @@ func ignoreNotFound(err error) error {
 
 func (r *PipelineReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
-	log := r.Log.WithValues("pipeline", req.NamespacedName)
+	log := r.Log.WithValues("pipeline", req.NamespacedName, "ctx", ctx)
 
-	var ppl civ1alpha1.Pipeline
+	var ppl jindra.Pipeline
 	if err := r.Get(ctx, req.NamespacedName, &ppl); err != nil {
 		log.Error(err, "unable to fetch Pipeline")
 		// we'll ignore not-found errors, since they can't be fixed by an immediate
@@ -62,6 +62,6 @@ func (r *PipelineReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 func (r *PipelineReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&civ1alpha1.Pipeline{}).
+		For(&jindra.Pipeline{}).
 		Complete(r)
 }
