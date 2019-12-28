@@ -70,12 +70,12 @@ type PipelineSpec struct {
 
 // Resources defines a pipeline resources for new versions should be done
 // +k8s:openapi-gen=true
+// +kubebuilder:validation:Optional
 type Resources struct {
-	// +optional
-	Triggers []Trigger `json:"triggers"`
+	// +kubebuilder:validation:Optional
+	Triggers []Trigger `json:"triggers,omitempty"`
 
-	// +kubebuilder:validation:EmbeddedResource
-	Containers []core.Container `json:"containers"`
+	Containers []core.Container `json:"containers,omitempty"`
 }
 
 // Trigger defines a pipeline trigger and the cron schedule when the checks
@@ -84,6 +84,8 @@ type Trigger struct {
 	Name     string `json:"name"`
 	Schedule string `json:"schedule"`
 }
+
+// +kubebuilder:printcolumn:JSONPath=".status.buildNo",name=BuildNo,type=int
 
 // PipelineStatus defines the observed state of Pipeline
 type PipelineStatus struct {
