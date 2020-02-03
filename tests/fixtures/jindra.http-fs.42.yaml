@@ -1,6 +1,6 @@
 ---
-apiVersion: batch/v1
-kind: Job
+apiVersion: v1
+kind: Pod
 metadata:
   creationTimestamp: null
   labels:
@@ -8,125 +8,116 @@ metadata:
     jindra.io/run: "42"
   name: jindra.http-fs.42
 spec:
-  backoffLimit: 0
-  template:
-    metadata:
-      creationTimestamp: null
-      labels:
-        jindra.io/pipeline: http-fs
-        jindra.io/run: "42"
-      name: jindra.http-fs.42
-    spec:
-      containers:
-      - env:
-        - name: MY_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
-        - name: MY_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: MY_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-        - name: MY_NODE_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: spec.nodeName
-        - name: MY_UID
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.uid
-        - name: CONFIG_MAP_NAME_FORMAT_STRING
-          value: jindra.%s.%d.stages
-        - name: JINDRA_PIPELINE_NAME
-          value: http-fs
-        - name: JINDRA_PIPELINE_RUN_NO
-          value: "42"
-        - name: JINDRA_SEMAPHORE_MOUNT_PATH
-          value: /var/lock/jindra
-        - name: JINDRA_STAGES_MOUNT_PATH
-          value: /jindra/stages
-        - name: OUT_RESOURCE_ANNOTATION_KEY
-          value: jindra.io/outputs
-        - name: OUT_RESOURCE_CONTAINER_NAME_PREFIX
-          value: jindra-resource-out-
-        - name: PIPELINE_LABEL_KEY
-          value: jindra.io/pipeline
-        - name: STAGES_RUNNING_SEMAPHORE
-          value: /var/lock/jindra/stages-running
-        - name: RSYNC_KEY_NAME_FORMAT_STRING
-          value: jindra.%s.%d.rsync-keys
-        - name: RUN_LABEL_KEY
-          value: jindra.io/run
-        - name: WAIT_FOR_ANNOTATION_KEY
-          value: jindra.io/wait-for
-        image: jindra/jindra-runner:latest
-        name: runner
-        resources: {}
-        volumeMounts:
-        - mountPath: /jindra/resources/transit
-          name: jindra-resource-transit
-        - mountPath: /var/lock/jindra
-          name: jindra-semaphores
-        - mountPath: /jindra/stages
-          name: stages
-      - args:
-        - /bin/sh
-        - -c
-        - /k8s-pod-watcher --debug --semaphore-file ${STAGES_RUNNING_SEMAPHORE}
-        env:
-        - name: STAGES_RUNNING_SEMAPHORE
-          value: /var/lock/jindra/stages-running
-        image: jindra/pod-watcher:latest
-        name: pod-watcher
-        resources: {}
-        volumeMounts:
-        - mountPath: /var/lock/jindra
-          name: jindra-semaphores
-      - env:
-        - name: SSH_ENABLE_ROOT
-          value: "true"
-        - name: STAGES_RUNNING_SEMAPHORE
-          value: /var/lock/jindra/stages-running
-        image: jindra/rsync-server:latest
-        name: rsync
-        resources: {}
-        volumeMounts:
-        - mountPath: /mnt/ssh
-          name: rsync
-        - mountPath: /var/lock/jindra
-          name: jindra-semaphores
-      initContainers:
-      - command:
-        - sh
-        - -xc
-        - touch /var/lock/jindra/stages-running
-        image: alpine
-        name: set-semaphores
-        resources: {}
-        volumeMounts:
-        - mountPath: /var/lock/jindra
-          name: jindra-semaphores
-      restartPolicy: Never
-      serviceAccountName: jindra-runner
-      volumes:
-      - emptyDir: {}
-        name: jindra-tools
-      - emptyDir: {}
-        name: jindra-semaphores
-      - emptyDir: {}
-        name: jindra-resource-transit
-      - configMap:
-          name: jindra.http-fs.42.stages
-        name: stages
-      - name: rsync
-        secret:
-          items:
-          - key: pub
-            path: ./authorized_keys
-          secretName: jindra.http-fs.42.rsync-keys
+  containers:
+  - env:
+    - name: MY_IP
+      valueFrom:
+        fieldRef:
+          fieldPath: status.podIP
+    - name: MY_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.name
+    - name: MY_NAMESPACE
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.namespace
+    - name: MY_NODE_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: spec.nodeName
+    - name: MY_UID
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.uid
+    - name: CONFIG_MAP_NAME_FORMAT_STRING
+      value: jindra.%s.%d.stages
+    - name: JINDRA_PIPELINE_NAME
+      value: http-fs
+    - name: JINDRA_PIPELINE_RUN_NO
+      value: "42"
+    - name: JINDRA_SEMAPHORE_MOUNT_PATH
+      value: /var/lock/jindra
+    - name: JINDRA_STAGES_MOUNT_PATH
+      value: /jindra/stages
+    - name: OUT_RESOURCE_ANNOTATION_KEY
+      value: jindra.io/outputs
+    - name: OUT_RESOURCE_CONTAINER_NAME_PREFIX
+      value: jindra-resource-out-
+    - name: PIPELINE_LABEL_KEY
+      value: jindra.io/pipeline
+    - name: STAGES_RUNNING_SEMAPHORE
+      value: /var/lock/jindra/stages-running
+    - name: RSYNC_KEY_NAME_FORMAT_STRING
+      value: jindra.%s.%d.rsync-keys
+    - name: RUN_LABEL_KEY
+      value: jindra.io/run
+    - name: WAIT_FOR_ANNOTATION_KEY
+      value: jindra.io/wait-for
+    image: jindra/jindra-runner:latest
+    name: 0-runner
+    resources: {}
+    volumeMounts:
+    - mountPath: /jindra/resources/transit
+      name: jindra-resource-transit
+    - mountPath: /var/lock/jindra
+      name: jindra-semaphores
+    - mountPath: /jindra/stages
+      name: stages
+  - args:
+    - /bin/sh
+    - -c
+    - /k8s-pod-watcher --debug --semaphore-file ${STAGES_RUNNING_SEMAPHORE}
+    env:
+    - name: STAGES_RUNNING_SEMAPHORE
+      value: /var/lock/jindra/stages-running
+    image: jindra/pod-watcher:latest
+    name: pod-watcher
+    resources: {}
+    volumeMounts:
+    - mountPath: /var/lock/jindra
+      name: jindra-semaphores
+  - env:
+    - name: SSH_ENABLE_ROOT
+      value: "true"
+    - name: STAGES_RUNNING_SEMAPHORE
+      value: /var/lock/jindra/stages-running
+    image: jindra/rsync-server:latest
+    name: rsync
+    resources: {}
+    volumeMounts:
+    - mountPath: /mnt/ssh
+      name: rsync
+    - mountPath: /var/lock/jindra
+      name: jindra-semaphores
+  initContainers:
+  - command:
+    - sh
+    - -xc
+    - touch /var/lock/jindra/stages-running
+    image: alpine
+    name: set-semaphores
+    resources: {}
+    volumeMounts:
+    - mountPath: /var/lock/jindra
+      name: jindra-semaphores
+  restartPolicy: Never
+  serviceAccountName: jindra-runner
+  volumes:
+  - emptyDir: {}
+    name: jindra-tools
+  - emptyDir: {}
+    name: jindra-semaphores
+  - emptyDir: {}
+    name: jindra-resource-transit
+  - configMap:
+      name: jindra.http-fs.42.stages
+    name: stages
+  - name: rsync
+    secret:
+      items:
+      - key: pub
+        path: ./authorized_keys
+      secretName: jindra.http-fs.42.rsync-keys
 status: {}
 

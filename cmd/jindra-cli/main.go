@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/ghodss/yaml"
@@ -32,14 +33,14 @@ func defaulter(p jindra.Pipeline) {
 	fmt.Println(interface2yaml(p))
 }
 
-func job(p jindra.Pipeline, buildNo int) {
-	job, err := p.PipelineRunJob(buildNo)
+func runner(p jindra.Pipeline, buildNo int) {
+	runnerPod, err := p.RunnerPod(buildNo)
 	if err != nil {
-		log.Fatalf("error converting jindra pipeline config to job for pipeline run: %s", err)
+		log.Fatalf("error converting jindra pipeline config to runner for pipeline run: %s", err)
 	}
 
 	fmt.Println("---")
-	fmt.Println(interface2yaml(job))
+	fmt.Println(interface2yaml(runnerPod))
 }
 
 func secret(p jindra.Pipeline, buildNo int) {
@@ -73,9 +74,13 @@ func stageNames(p jindra.Pipeline, buildNo int) {
 		log.Fatalf("error converting jindra pipeline config to config map for pipeline run: %s", err)
 	}
 
+	names := []string{}
+
 	for k := range cm.Data {
-		fmt.Println(strings.TrimSuffix(k, ".yaml"))
+		names = append(names, strings.TrimSuffix(k, ".yaml"))
 	}
+	sort.Strings(names)
+	fmt.Println(strings.Join(names, "\n"))
 }
 
 func validate(p jindra.Pipeline) {
@@ -90,10 +95,12 @@ func validate(p jindra.Pipeline) {
 }
 
 func main() {
-	buildNo := flag.Int("build-no", 42, "build number")
+	buildNo := flag.Int("b", 42, "build number")
+	setDefaults := flag.Bool("d", true, "set default values before executing command")
+	runValidator := flag.Bool("v", true, "run validation before executing command")
 	config := flag.String("c", "", "jindra pipeline config (use '-c -' for reading from stdin)")
 	help := flag.Bool("h", false, "show help text")
-	verbose := flag.Bool("v", false, "verbose output")
+	verbose := flag.Bool("verbose", false, "verbose output")
 
 	flag.Usage = func() {
 		fmt.Printf(`
@@ -104,7 +111,7 @@ Commands:
   stage STAGE : print stage configuration
   stagenames  : print stage names (which can be used with the stage sub command)
   configmap   : print configmap
-  job         : print runner job
+  runner      : print runner pod
   secret      : print secret
 
   defaulter   : print config with default values
@@ -155,17 +162,25 @@ Options:
 		log.Fatalf("cannot convert yaml to jindra pipeline: %s", err)
 	}
 
+	if *setDefaults {
+		p.SetDefaults()
+	}
+
+	if *runValidator {
+		p.Validate()
+	}
+
 	switch flag.Arg(0) {
 	case "all":
 		secret(p, *buildNo)
 		configMap(p, *buildNo)
-		job(p, *buildNo)
+		runner(p, *buildNo)
 	case "configmap":
 		configMap(p, *buildNo)
 	case "defaulter":
 		defaulter(p)
-	case "job":
-		job(p, *buildNo)
+	case "runner":
+		runner(p, *buildNo)
 	case "secret":
 		secret(p, *buildNo)
 	case "stage":

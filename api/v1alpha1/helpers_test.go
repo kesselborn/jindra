@@ -25,7 +25,6 @@ import (
 	"testing"
 
 	"github.com/ghodss/yaml"
-	batch "k8s.io/api/batch/v1"
 	core "k8s.io/api/core/v1"
 )
 
@@ -86,17 +85,6 @@ func configMapFileContents(file string, t *testing.T) *core.ConfigMap {
 
 func secretFileContents(file string, t *testing.T) *core.Secret {
 	var data core.Secret
-
-	err := json.Unmarshal(jsonFromYamlFile(file, t), &data)
-	if err != nil {
-		t.Fatalf("error json unmarshaling data from %s: %s", file, err)
-	}
-
-	return &data
-}
-
-func jobFileContents(file string, t *testing.T) *batch.Job {
-	var data batch.Job
 
 	err := json.Unmarshal(jsonFromYamlFile(file, t), &data)
 	if err != nil {

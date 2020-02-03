@@ -54,8 +54,8 @@ func TestBasicUnmarshalingTest(t *testing.T) {
 }
 
 func TestJob(t *testing.T) {
-	job, _ := getExamplePipeline(t).PipelineRunJob(42)
-	expected := *jobFileContents(path.Join(fixtureDir, "jindra.http-fs.42.yaml"), t)
+	job, _ := getExamplePipeline(t).RunnerPod(42)
+	expected := *podFileContents(path.Join(fixtureDir, "jindra.http-fs.42.yaml"), t)
 
 	if !reflect.DeepEqual(expected, job) {
 		t.Fatalf("\t%2d: %-80s %s", 0, "job should be correct", errMsg(t, expected, job))
@@ -193,10 +193,10 @@ func TestImagePullPolicyIfNotPresent(t *testing.T) {
 	ppl.Annotations[imagePullPolicyAnnotationKey] = string(core.PullIfNotPresent)
 
 	stages, _ := ppl.generateStagePods(42)
-	job, _ := ppl.PipelineRunJob(42)
+	pod, _ := ppl.RunnerPod(42)
 
 	containers := getJindraContainers(stages)
-	containers = append(containers, collectJindraContainers(append(job.Spec.Template.Spec.InitContainers, job.Spec.Template.Spec.Containers...))...)
+	containers = append(containers, collectJindraContainers(append(pod.Spec.InitContainers, pod.Spec.Containers...))...)
 
 	for i, container := range containers {
 		descr := fmt.Sprintf("image pull policy of container %s should be correct", container.Name)
@@ -214,10 +214,10 @@ func TestImagePullPolicyAlways(t *testing.T) {
 	ppl.Annotations[imagePullPolicyAnnotationKey] = string(core.PullAlways)
 
 	stages, _ := ppl.generateStagePods(42)
-	job, _ := ppl.PipelineRunJob(42)
+	job, _ := ppl.RunnerPod(42)
 
 	containers := getJindraContainers(stages)
-	containers = append(containers, collectJindraContainers(append(job.Spec.Template.Spec.InitContainers, job.Spec.Template.Spec.Containers...))...)
+	containers = append(containers, collectJindraContainers(append(job.Spec.InitContainers, job.Spec.Containers...))...)
 
 	for i, container := range containers {
 		descr := fmt.Sprintf("image pull policy of container %s should be correct", container.Name)

@@ -23,7 +23,6 @@ import (
 	"strings"
 
 	"github.com/ghodss/yaml"
-	batch "k8s.io/api/batch/v1"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -65,59 +64,49 @@ func NewPipelineFromYaml(yamlData []byte) (Pipeline, error) {
 	return p, nil
 }
 
-// PipelineRunJob creates the job that runs the pipeline
-func (ppl Pipeline) PipelineRunJob(buildNo int) (batch.Job, error) {
-	backoffLimit := int32(0)
-
-	return batch.Job{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "batch/v1",
-			Kind:       "Job",
-		},
+// RunnerPod creates the job that runs the pipeline
+func (ppl Pipeline) RunnerPod(buildNo int) (core.Pod, error) {
+	return core.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: defaultLabels(ppl.Name, buildNo, ""),
 			Name:   fmt.Sprintf(nameFormatString, ppl.Name, buildNo),
 		},
-		Spec: batch.JobSpec{
-			BackoffLimit: &backoffLimit,
-			Template: core.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: defaultLabels(ppl.Name, buildNo, ""),
-					Name:   fmt.Sprintf(nameFormatString, ppl.Name, buildNo),
-				},
-				Spec: core.PodSpec{
-					RestartPolicy:      core.RestartPolicyNever,
-					ServiceAccountName: runnerServiceAccount,
-					Volumes: append(jindraVolumes([]string{"transit"}),
-						core.Volume{
-							Name: "stages", VolumeSource: core.VolumeSource{
-								ConfigMap: &core.ConfigMapVolumeSource{
-									LocalObjectReference: core.LocalObjectReference{
-										Name: fmt.Sprintf(configMapFormatString, ppl.Name, buildNo),
-									},
-								},
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "Pod",
+		},
+
+		Spec: core.PodSpec{
+			RestartPolicy:      core.RestartPolicyNever,
+			ServiceAccountName: runnerServiceAccount,
+			Volumes: append(jindraVolumes([]string{"transit"}),
+				core.Volume{
+					Name: "stages", VolumeSource: core.VolumeSource{
+						ConfigMap: &core.ConfigMapVolumeSource{
+							LocalObjectReference: core.LocalObjectReference{
+								Name: fmt.Sprintf(configMapFormatString, ppl.Name, buildNo),
 							},
 						},
-						core.Volume{
-							Name: "rsync", VolumeSource: core.VolumeSource{
-								Secret: &core.SecretVolumeSource{
-									SecretName: fmt.Sprintf(rsyncSecretFormatString, ppl.Name, buildNo),
-									Items: []core.KeyToPath{
-										{Key: rsyncSecretPubKey, Path: "./authorized_keys"},
-									},
-								},
-							},
-						},
-					),
-					Containers: []core.Container{
-						ppl.jindraRunnerContainer(buildNo),
-						ppl.podWatcherContainer(),
-						ppl.rsyncServerContainer(),
-					},
-					InitContainers: []core.Container{
-						ppl.semaphoreContainer(),
 					},
 				},
+				core.Volume{
+					Name: "rsync", VolumeSource: core.VolumeSource{
+						Secret: &core.SecretVolumeSource{
+							SecretName: fmt.Sprintf(rsyncSecretFormatString, ppl.Name, buildNo),
+							Items: []core.KeyToPath{
+								{Key: rsyncSecretPubKey, Path: "./authorized_keys"},
+							},
+						},
+					},
+				},
+			),
+			Containers: []core.Container{
+				ppl.jindraRunnerContainer(buildNo),
+				ppl.podWatcherContainer(),
+				ppl.rsyncServerContainer(),
+			},
+			InitContainers: []core.Container{
+				ppl.semaphoreContainer(),
 			},
 		},
 	}, nil

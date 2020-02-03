@@ -114,7 +114,6 @@ metadata:
 EOF
 
 kubectl patch pod ${MY_NAME} --patch "$(cat /tmp/patch.yaml)"
-kubectl patch job jindra.${JINDRA_PIPELINE_NAME}.${JINDRA_PIPELINE_RUN_NO} --patch "$(cat /tmp/patch.yaml)"
 
 cat<<EOF >>/tmp/patch.yaml
   ownerReferences:
@@ -140,6 +139,7 @@ do
   fi
 done
 
+
 if [ "${res}" = "0" ]
 then
   run_pod ${JINDRA_STAGES_MOUNT_PATH}/[0-9][0-9]-on-success.yaml
@@ -148,6 +148,7 @@ else
 fi
 
 run_pod ${JINDRA_STAGES_MOUNT_PATH}/[0-9][0-9]-final.yaml
+set -x
 
 rm ${STAGES_RUNNING_SEMAPHORE}
 exit ${res}
