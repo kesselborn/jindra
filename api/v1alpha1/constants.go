@@ -32,7 +32,10 @@ const (
 
 // container image names
 const (
-	runnerContainerName = "runner"
+	// kubectl's status of a container is the status of the first container in alphabetical
+	// order ... at least thats what I reengineered ... it just sounds really weird, but
+	// I'll live with this observation and call the container 0-runner instead of runner
+	runnerContainerName = "0-runner"
 	runnerImage         = "jindra/jindra-runner:latest"
 
 	podwatcherContainerName = "pod-watcher"

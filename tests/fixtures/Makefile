@@ -27,22 +27,22 @@ secrets:
 	make -C ../.. bin/jindra-cli
 
 jindra.http-fs.42.01-build-go-binary.yaml: ${JINDRA_CLI}
-	${JINDRA_CLI} -build-no 42 -c pipeline-example.yaml stage 01-build-go-binary > $@
+	${JINDRA_CLI} -b 42 -c pipeline-example.yaml stage 01-build-go-binary > $@
 
 jindra.http-fs.42.02-build-docker-image.yaml: ${JINDRA_CLI}
-	${JINDRA_CLI} -build-no 42 -c pipeline-example.yaml stage 02-build-docker-image > $@
+	${JINDRA_CLI} -b 42 -c pipeline-example.yaml stage 02-build-docker-image > $@
 
 jindra.http-fs.42.03-on-success.yaml: ${JINDRA_CLI}
-	${JINDRA_CLI} -build-no 42 -c pipeline-example.yaml stage 03-on-success > $@
+	${JINDRA_CLI} -b 42 -c pipeline-example.yaml stage 03-on-success > $@
 
 jindra.http-fs.42.04-on-error.yaml: ${JINDRA_CLI}
-	${JINDRA_CLI} -build-no 42 -c pipeline-example.yaml stage 04-on-error > $@
+	${JINDRA_CLI} -b 42 -c pipeline-example.yaml stage 04-on-error > $@
 
 jindra.http-fs.42.05-final.yaml: ${JINDRA_CLI}
-	${JINDRA_CLI} -build-no 42 -c pipeline-example.yaml stage 05-final > $@
+	${JINDRA_CLI} -b 42 -c pipeline-example.yaml stage 05-final > $@
 
 jindra.http-fs.42.stages.yaml: ${JINDRA_CLI}
-	${JINDRA_CLI} -build-no 42 -c pipeline-example.yaml configmap > $@
+	${JINDRA_CLI} -b 42 -c pipeline-example.yaml configmap > $@
 
 jindra.http-fs.42.yaml: ${JINDRA_CLI}
-	${JINDRA_CLI} -build-no 42 -c pipeline-example.yaml job > $@
+	${JINDRA_CLI} -b 42 -c pipeline-example.yaml runner > $@

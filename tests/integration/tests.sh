@@ -11,7 +11,7 @@ jindra_cli=../../bin/jindra-cli
 
 function run() {
   local pipeline=$1
-  ${jindra_cli} -build-no 42 -c ${pipeline} all|${kubectl} apply -f-
+  ${jindra_cli} -b 42 -c ${pipeline} all|${kubectl} apply -f-
 }
 
 # you can put tests in other files, just include them
