@@ -3,6 +3,7 @@ JINDRA_CLI = ../../bin/jindra-cli
 update-stages:
 	-kubectl -n jindra delete configmap jindra.http-fs.42.stages
 	-kubectl -n jindra delete secret jindra.http-fs.42.rsync-keys
+	-kubectl create namespace jindra
 
 	kubectl -n jindra create secret generic jindra.http-fs.42.rsync-keys --from-file="priv=rsync" --from-file="pub=rsync.pub"
 	kubectl -n jindra create configmap jindra.http-fs.42.stages \

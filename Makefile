@@ -56,7 +56,7 @@ ${DEPLOY_CONFIG}: manifests
 	cd config/default && kustomize edit set namespace ${PREFIX}${NAMESPACE}
 	cd config/default && kustomize edit set nameprefix "${PREFIX}"
 
-	KUBECONFIG=${KUBECONFIG} kubectl kustomize config/$${KUSTOMIZE_CONFIG:-default} > $@
+	KUBECONFIG=${KUBECONFIG} kustomize build config/$${KUSTOMIZE_CONFIG:-default} > $@
 	sed -i "" -e 's/name: ${PREFIX}system$$/name: ${PREFIX}${NAMESPACE}/' \
 		        -e 's/- psp-jindra-controller$$/- ${PREFIX}psp-jindra-controller/' \
 						$@
