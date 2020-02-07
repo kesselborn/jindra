@@ -1,0 +1,74 @@
+---
+# event created manually, e.g. by jindra-cli
+apiVersion: v1
+kind: Event
+metadata:
+  name: jindra manual trigger 2020-02-07T12:02:02 242345
+  labels:
+    app: jindra
+    type: trigger
+involvedObject:
+  apiVersion: ci.jindra.io/v1alpha1
+  kind: Pipeline
+  name: http-fs
+  namespace: jindra
+eventTime: 2020-02-07T09:36:07.000000Z
+firstTimestamp: 2020-02-07T09:36:07.000000Z
+lastTimestamp: 2020-02-07T09:36:07.000000Z
+reason: "manually-triggered"
+message: "user manually triggered new run"
+reportingComponent: "jindra.io/jindra-cli"
+reportingInstance: "n/a"
+type: normal
+action: run-requested
+---
+# event created, when a webhook trigger was called
+apiVersion: v1
+kind: Event
+metadata:
+  name: jindra webhook trigger 2020-02-07T12:02:02 242345
+  labels:
+    app: jindra
+    type: trigger
+involvedObject:
+  apiVersion: ci.jindra.io/v1alpha1
+  fieldPath: spec.resources.containers{git}
+  kind: Pipeline
+  name: http-fs
+  namespace: jindra
+eventTime: 2020-02-07T09:36:07.000000Z
+firstTimestamp: 2020-02-07T09:36:07.000000Z
+lastTimestamp: 2020-02-07T09:36:07.000000Z
+reason: "webhook-trigger-received"
+message: "webhook trigger was received"
+reportingComponent: "jindra.io/webhook-trigger"
+reportingInstance: "n/a"
+type: normal
+action: version-check-requested
+---
+# event that will create a pipeline run with a specific version of a
+# resource that can be a trigger
+# can be created by a (cron)job that checks whether a new version is
+# available or by a tool that wants to run a specific version
+apiVersion: v1
+kind: Event
+metadata:
+  name: jindra resource trigger 2020-02-07T12:02:02 242345
+  labels:
+    app: jindra
+    type: trigger
+involvedObject:
+  apiVersion: ci.jindra.io/v1alpha1
+  fieldPath: spec.resources.containers{git}
+  kind: Pipeline
+  name: http-fs
+  namespace: jindra
+eventTime: 2020-02-07T09:36:07.000000Z
+firstTimestamp: 2020-02-07T09:36:07.000000Z
+lastTimestamp: 2020-02-07T09:36:07.000000Z
+reason: "\"version\":{\"ref\":\"5c1cea807afbd1c5e91fd6481611a93da10379cb\"}"
+message: "git resource has new version #5c1cea8"
+reportingComponent: "jindra.io/git-trigger"
+reportingInstance: "jindra-git-trigger-job..."
+type: normal
+action: version-run-requested

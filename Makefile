@@ -37,7 +37,7 @@ bin/manager: manifests generate fmt vet ${GO_FILES}
 
 # Run against the configured Kubernetes cluster in ~/.kube/config
 run: generate fmt vet manifests
-	go run ./main.go
+	ENABLE_WEBHOOKS=false go run ./main.go
 
 # Install CRDs into a cluster
 install: manifests
